@@ -475,30 +475,34 @@ select.filter-sel {
   transition: all .2s;
 }
 .cal-nav:hover { border-color: var(--accent); }
-.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
-.cal-day-name { font-size: .68rem; color: var(--text3); text-align: center; padding: 4px 2px; font-weight: 700; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; width: 100%; }
+.cal-day-name { font-size: .62rem; color: var(--text3); text-align: center; padding: 4px 1px; font-weight: 700; overflow: hidden; }
 .cal-cell {
-  min-height: 60px;
-  border-radius: 8px;
-  padding: 4px;
+  min-height: 52px;
+  border-radius: 5px;
+  padding: 3px 2px;
   background: var(--surface2);
   border: 1px solid var(--border);
   cursor: pointer;
   transition: all .2s;
+  overflow: hidden;
+  min-width: 0;
 }
 .cal-cell:hover { border-color: var(--accent); }
 .cal-cell.today { border-color: var(--accent); background: rgba(79,142,247,.08); }
 .cal-cell.other-month { opacity: .25; }
-.cal-cell-num { font-size: .72rem; color: var(--text2); margin-bottom: 3px; }
+.cal-cell-num { font-size: .65rem; color: var(--text2); margin-bottom: 2px; }
 .cal-cell.today .cal-cell-num { color: var(--accent); font-weight: 800; }
 .cal-dot {
-  font-size: .6rem;
+  font-size: .52rem;
   border-radius: 3px;
-  padding: 1px 4px;
-  margin-bottom: 2px;
+  padding: 1px 2px;
+  margin-bottom: 1px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: block;
+  max-width: 100%;
 }
 .cal-dot.high { background: rgba(248,113,113,.25); color: #ff9090; }
 .cal-dot.mid  { background: rgba(251,191,36,.2); color: var(--yellow); }
@@ -619,7 +623,11 @@ select.filter-sel {
   .container { padding: 14px 12px 90px; }
   .form-grid { grid-template-columns: 1fr; }
   .logo { font-size: 1rem; }
-  .cal-cell { min-height: 48px; }
+  .cal-cell { min-height: 42px; }
+  .cal-wrap { padding: 12px 8px; }
+  .cal-grid { gap: 1px; }
+  .cal-dot { font-size: .48rem; padding: 1px 2px; }
+  .cal-day-name { font-size: .58rem; padding: 3px 1px; }
 }
 </style>
 </head>
@@ -820,7 +828,7 @@ var pendingSync = [];
 var deferredPrompt = null;
 
 var TAG_COLORS = ['#f97316','#06b6d4','#8b5cf6','#ec4899','#10b981','#f59e0b','#3b82f6','#ef4444'];
-var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwJlvGFet8qtyFo4pvv2cB2x4zzhBMV8YNNsDsQE4o8hdZe7eVT12YvEWr2FHuxhJ4axw/exec'; 
+var APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE'; // ← החלף בכתובת ה-Web App שלך
 
 // ===== SERVICE WORKER =====
 if ('serviceWorker' in navigator) {
