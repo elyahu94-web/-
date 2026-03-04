@@ -1,4 +1,4 @@
-const CACHE = 'tasks-pwa-v10';
+const CACHE = 'tasks-pwa-v11';
 const ASSETS = [
   '/',
   '/index.html',
