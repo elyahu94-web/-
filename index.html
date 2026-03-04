@@ -828,7 +828,7 @@ var pendingSync = [];
 var deferredPrompt = null;
 
 var TAG_COLORS = ['#f97316','#06b6d4','#8b5cf6','#ec4899','#10b981','#f59e0b','#3b82f6','#ef4444'];
-var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwJlvGFet8qtyFo4pvv2cB2x4zzhBMV8YNNsDsQE4o8hdZe7eVT12YvEWr2FHuxhJ4axw/exec';
+var APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE'; // ← החלף בכתובת ה-Web App שלך
 
 // ===== SERVICE WORKER =====
 if ('serviceWorker' in navigator) {
@@ -927,13 +927,10 @@ function loadTasks() {
 // ===== API CALL =====
 function apiCall(action, payload, onSuccess, onError) {
   var url = APPS_SCRIPT_URL + '?action=' + action;
-  var opts = { method: 'GET' };
   if (payload) {
-    opts.method = 'POST';
-    opts.headers = { 'Content-Type': 'application/json' };
-    opts.body = JSON.stringify(payload);
+    url += '&payload=' + encodeURIComponent(JSON.stringify(payload));
   }
-  fetch(url, opts)
+  fetch(url)
     .then(function(r) { return r.json(); })
     .then(function(d) {
       if (d.error) { if (onError) onError({ message: d.error }); }
