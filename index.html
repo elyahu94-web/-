@@ -1406,13 +1406,16 @@ function setView(v) {
 var calendarEvents = [];
 
 function fetchCalendarEvents(year, month) {
-  apiCall('getCalendarEvents', {year: year, month: month}, function(events) {
-    calendarEvents = events || [];
-    renderCalendarGrid(year, month);
-  }, function() {
-    calendarEvents = [];
-    renderCalendarGrid(year, month);
-  });
+  fetch(APPS_SCRIPT_URL + '?action=getCalendarEvents&year=' + year + '&month=' + month)
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      calendarEvents = (d.data || d) || [];
+      renderCalendarGrid(year, month);
+    })
+    .catch(function(){
+      calendarEvents = [];
+      renderCalendarGrid(year, month);
+    });
 }
 
 function renderCalendar() {
