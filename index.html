@@ -4,12 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0a0e1a">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="משימות">
 <title>מנהל משימות</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -55,10 +57,8 @@ body {
 
 /* HEADER */
 .header {
-  background: rgba(10,14,26,.92);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
   padding: 0 20px;
   height: 64px;
   display: flex;
@@ -93,14 +93,14 @@ body {
   font-weight: 700;
   border: 1px solid;
 }
-.stat-open { background: rgba(52,211,153,.1); border-color: rgba(52,211,153,.3); color: var(--green); }
-.stat-overdue { background: rgba(248,113,113,.1); border-color: rgba(248,113,113,.3); color: var(--red); }
-.stat-done { background: rgba(79,142,247,.1); border-color: rgba(79,142,247,.3); color: var(--accent); }
+.stat-open { background: rgba(52,211,153,.15); border-color: rgba(52,211,153,.4); color: #1a7a4a; }
+.stat-overdue { background: rgba(248,113,113,.15); border-color: rgba(248,113,113,.4); color: #c0392b; }
+.stat-done { background: rgba(79,142,247,.15); border-color: rgba(79,142,247,.4); color: #1a5ab8; }
 
 .btn-reminder {
-  background: rgba(251,191,36,.1);
-  border: 1px solid rgba(251,191,36,.3);
-  color: var(--yellow);
+  background: rgba(251,191,36,.15);
+  border: 1px solid rgba(251,191,36,.5);
+  color: #b8860b;
   border-radius: 20px;
   padding: 5px 12px;
   font-family: 'Heebo', sans-serif;
