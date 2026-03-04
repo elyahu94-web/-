@@ -1472,10 +1472,11 @@ function doRenderCalendar() {
 
 function openDayModal(dateStr) {
   var dayTasks = tasks.filter(function(t){ return t.deadline === dateStr; });
+  var dayEvents = calendarEvents.filter(function(e){ return e.date === dateStr; });
   var dp = dateStr.split('-');
   var dn = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
   document.getElementById('dayModalTitle').textContent = 'יום ' + dn[new Date(dateStr).getDay()] + ' — ' + dp[2]+'/'+dp[1];
-  if (!dayTasks.length) {
+  if (!dayTasks.length && !dayEvents.length) {
     document.getElementById('dayModalContent').innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px">אין משימות ליום זה</div>';
   } else {
     dayTasks.sort(function(a,b){ return (a.time||'99').localeCompare(b.time||'99'); });
@@ -1486,7 +1487,14 @@ function openDayModal(dateStr) {
         (t.desc?'<div style="font-size:.76rem;color:var(--text2);margin-top:4px">'+esc(t.desc)+'</div>':'')+
         '</div>';
     }).join('');
-    document.getElementById('dayModalContent').innerHTML = html;
+    // Add Google Calendar events
+    var evHtml = dayEvents.map(function(e){
+      return '<div style="background:rgba(130,80,220,.15);border-right:3px solid #b794f4;padding:8px 12px;border-radius:6px;margin-bottom:6px">' +
+        '<div style="font-weight:600;color:#b794f4">📅 ' + esc(e.title) + '</div>' +
+        (e.time ? '<div style="font-size:.8rem;color:var(--text3)">' + e.time + '</div>' : '') +
+        '</div>';
+    }).join('');
+    document.getElementById('dayModalContent').innerHTML = evHtml + html;
   }
   document.getElementById('dayModal').classList.add('on');
 }
