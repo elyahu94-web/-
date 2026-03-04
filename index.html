@@ -1421,10 +1421,15 @@ function fetchCalendarEvents(year, month) {
 function renderCalendar() {
   var now = new Date();
   if (!calYear) { calYear = now.getFullYear(); calMonth = now.getMonth(); }
-  fetchCalendarEvents(calYear, calMonth);
+  // Fetch Google Calendar events first, then render
+  fetch(APPS_SCRIPT_URL + '?action=getCalendarEvents&year=' + calYear + '&month=' + (calMonth+1))
+    .then(function(r){ return r.json(); })
+    .then(function(d){ calendarEvents = (d.data || d) || []; })
+    .catch(function(){ calendarEvents = []; })
+    .then(function(){ doRenderCalendar(); });
+  return;
 }
-
-function renderCalendarGrid(calYear, calMonth) {
+function doRenderCalendar() {
   var now = new Date();
   if (!calYear) { calYear = now.getFullYear(); calMonth = now.getMonth(); }
   var mn = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
