@@ -507,6 +507,7 @@ select.filter-sel {
 .cal-dot.high { background: rgba(248,113,113,.25); color: #ff9090; }
 .cal-dot.mid  { background: rgba(251,191,36,.2); color: var(--yellow); }
 .cal-dot.low  { background: rgba(52,211,153,.15); color: var(--green); }
+.cal-dot.cal-event { background: rgba(130,80,220,.2); color: #b794f4; }
 
 /* MODAL */
 .overlay {
@@ -930,7 +931,11 @@ function apiCall(action, payload, onSuccess, onError) {
   var url = APPS_SCRIPT_URL;
   if (!payload) {
     // Simple GET
-    fetch(url + '?action=' + action)
+    var extraParams = '';
+    for (var i = 4; i < arguments.length; i++) {
+      if (arguments[i] !== undefined) extraParams += '&param' + (i-3) + '=' + arguments[i];
+    }
+    fetch(url + '?action=' + action + extraParams)
       .then(function(r) { return r.json(); })
       .then(function(d) {
         if (d.error) { if (onError) onError({message: d.error}); }
@@ -1181,7 +1186,7 @@ function getFiltered() {
     if (currentFilter === 'open') return !t.done;
     if (currentFilter === 'done') return t.done;
     if (currentFilter === 'today') return !t.done && t.deadline === today;
-    if (currentFilter === 'overdue') return !t.done && t.deadline && t.deadline < today;
+    if (currentFilter === 'overdue') return !t.done && t.deadline && t.deadline > '1900-01-01' && t.deadline < today;
     if (currentFilter === 'recur') return t.recurring;
     return true;
   });
@@ -1221,7 +1226,7 @@ function taskHTML(t, today) {
   else if (t.priority === 'נמוכה') priBadge = '<span class="badge b-low">🟢 נמוך</span>';
 
   var dateBadge = '';
-  if (t.deadline) {
+  if (t.deadline && t.deadline.substring(0,4) > '1900') {
     var dp = t.deadline.split('-');
     var dateStr = dp[2]+'/'+dp[1];
     if (t.deadline < today) dateBadge = '<span class="badge b-overdue">⚠️ ' + dateStr + '</span>';
@@ -1398,6 +1403,17 @@ function setView(v) {
   if (isCal) renderCalendar();
 }
 
+var calendarEvents = [];
+
+function fetchCalendarEvents(year, month) {
+  apiCall('getCalendarEvents', null, function(events) {
+    calendarEvents = events || [];
+    renderCalendarGrid(year, month);
+  }, function() {
+    renderCalendarGrid(year, month);
+  }, year, month);
+}
+
 function renderCalendar() {
   var now = new Date();
   if (!calYear) { calYear = now.getFullYear(); calMonth = now.getMonth(); }
@@ -1420,10 +1436,17 @@ function renderCalendar() {
     cell.className = 'cal-cell' + (ds === todayStr ? ' today' : '');
     var num = document.createElement('div'); num.className = 'cal-cell-num'; num.textContent = d;
     cell.appendChild(num);
-    tasks.filter(function(t){ return !t.done && t.deadline === ds; }).slice(0,3).forEach(function(t){
+    tasks.filter(function(t){ return !t.done && t.deadline === ds && t.deadline.substring(0,4) > '1900'; }).slice(0,3).forEach(function(t){
       var dot = document.createElement('div');
       dot.className = 'cal-dot ' + (t.priority === 'גבוהה' ? 'high' : t.priority === 'נמוכה' ? 'low' : 'mid');
       dot.textContent = t.title;
+      cell.appendChild(dot);
+    });
+    // Google Calendar events
+    calendarEvents.filter(function(e){ return e.date === ds; }).slice(0,2).forEach(function(e){
+      var dot = document.createElement('div');
+      dot.className = 'cal-dot cal-event';
+      dot.textContent = '📅 ' + e.title;
       cell.appendChild(dot);
     });
     (function(dateStr){ cell.addEventListener('click', function(){ openDayModal(dateStr); }); })(ds);
