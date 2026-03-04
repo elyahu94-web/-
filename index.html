@@ -1421,13 +1421,15 @@ function fetchCalendarEvents(year, month) {
 function renderCalendar() {
   var now = new Date();
   if (!calYear) { calYear = now.getFullYear(); calMonth = now.getMonth(); }
-  // Fetch Google Calendar events with 3 second timeout
-  var timeout = setTimeout(function(){ doRenderCalendar(); }, 3000);
+  // Render immediately with cached events, then update with fresh ones
+  doRenderCalendar();
   fetch(APPS_SCRIPT_URL + '?action=getCalendarEvents&year=' + calYear + '&month=' + (calMonth+1))
     .then(function(r){ return r.json(); })
-    .then(function(d){ calendarEvents = (d.data || d) || []; })
-    .catch(function(){ calendarEvents = []; })
-    .then(function(){ clearTimeout(timeout); doRenderCalendar(); });
+    .then(function(d){
+      calendarEvents = (d.data || d) || [];
+      doRenderCalendar(); // re-render with events
+    })
+    .catch(function(){ });
   return;
 }
 function doRenderCalendar() {
