@@ -828,7 +828,7 @@ var pendingSync = [];
 var deferredPrompt = null;
 
 var TAG_COLORS = ['#f97316','#06b6d4','#8b5cf6','#ec4899','#10b981','#f59e0b','#3b82f6','#ef4444'];
-var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwJlvGFet8qtyFo4pvv2cB2x4zzhBMV8YNNsDsQE4o8hdZe7eVT12YvEWr2FHuxhJ4axw/exec';
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwJlvGFet8qtyFo4pvv2cB2x4zzhBMV8YNNsDsQE4o8hdZe7eVT12YvEWr2FHuxhJ4axw/exec'; // ← החלף בכתובת ה-Web App שלך
 
 // ===== SERVICE WORKER =====
 if ('serviceWorker' in navigator) {
@@ -926,17 +926,32 @@ function loadTasks() {
 
 // ===== API CALL =====
 function apiCall(action, payload, onSuccess, onError) {
-  var url = APPS_SCRIPT_URL + '?action=' + action;
-  if (payload) {
-    url += '&payload=' + encodeURIComponent(JSON.stringify(payload));
-  }
-  fetch(url)
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d.error) { if (onError) onError({ message: d.error }); }
-      else { if (onSuccess) onSuccess(d.data !== undefined ? d.data : d); }
+  // GET for reads, POST via form-encoded for writes (avoids CORS preflight)
+  var url = APPS_SCRIPT_URL;
+  if (!payload) {
+    // Simple GET
+    fetch(url + '?action=' + action)
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.error) { if (onError) onError({message: d.error}); }
+        else { if (onSuccess) onSuccess(d.data !== undefined ? d.data : d); }
+      })
+      .catch(function(e) { if (onError) onError(e); });
+  } else {
+    // POST with text/plain to avoid CORS preflight
+    var body = JSON.stringify({action: action, payload: payload});
+    fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain'},
+      body: body
     })
-    .catch(function(e) { if (onError) onError(e); });
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.error) { if (onError) onError({message: d.error}); }
+        else { if (onSuccess) onSuccess(d.data !== undefined ? d.data : d); }
+      })
+      .catch(function(e) { if (onError) onError(e); });
+  }
 }
 
 var var_red = '#f87171';
