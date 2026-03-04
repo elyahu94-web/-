@@ -1406,12 +1406,13 @@ function setView(v) {
 var calendarEvents = [];
 
 function fetchCalendarEvents(year, month) {
-  apiCall('getCalendarEvents', null, function(events) {
+  apiCall('getCalendarEvents', {year: year, month: month}, function(events) {
     calendarEvents = events || [];
     renderCalendarGrid(year, month);
   }, function() {
+    calendarEvents = [];
     renderCalendarGrid(year, month);
-  }, year, month);
+  });
 }
 
 function renderCalendar() {
