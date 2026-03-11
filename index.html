@@ -561,32 +561,33 @@ select.filter-sel {
   margin-bottom: 20px;
 }
 .summary-box {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: rgba(34,211,238,.07);
+  border: 1.5px solid rgba(34,211,238,.35);
   border-radius: 12px;
   padding: 12px;
   min-width: 0;
 }
-.summary-box.summary-week  { border-color: rgba(79,142,247,.4); }
-.summary-box.summary-month { border-color: rgba(167,139,250,.4); }
+.summary-box.summary-week  { background: rgba(34,211,238,.10); border-color: rgba(34,211,238,.5); }
+.summary-box.summary-month { background: rgba(34,211,238,.07); border-color: rgba(34,211,238,.35); }
 .summary-box-hdr {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: .75rem;
-  font-weight: 800;
-  margin-bottom: 8px;
-  color: var(--text2);
+  font-size: .88rem;
+  font-weight: 900;
+  margin-bottom: 10px;
+  color: #22d3ee;
+  letter-spacing: .2px;
 }
-.summary-week  .summary-box-hdr { color: var(--accent); }
-.summary-month .summary-box-hdr { color: var(--purple); }
+.summary-week  .summary-box-hdr { color: #22d3ee; }
+.summary-month .summary-box-hdr { color: #67e8f9; }
 .summary-count {
-  background: var(--surface2);
+  background: rgba(34,211,238,.2);
   border-radius: 20px;
-  padding: 1px 8px;
-  font-size: .68rem;
-  font-weight: 700;
-  color: var(--text3);
+  padding: 2px 9px;
+  font-size: .72rem;
+  font-weight: 800;
+  color: #22d3ee;
 }
 
 /* WEEK GROUPS */
@@ -610,7 +611,7 @@ select.filter-sel {
   border-right: 3px solid var(--border2);
 }
 .week-group-hdr.this-week { border-right-color: var(--accent); background: rgba(79,142,247,.08); }
-.week-group-label { font-size: .75rem; font-weight: 800; color: var(--text2); }
+.week-group-label { font-size: .95rem; font-weight: 900; color: var(--text1); letter-spacing: .2px; }
 .week-group-date-range { font-size: .65rem; color: var(--text3); font-weight: 500; flex: 1; padding: 0 6px; }
 .week-group-hdr.this-week .week-group-date-range { color: rgba(79,142,247,.7); }
 .week-group-date-range { font-size: .65rem; color: var(--text3); font-weight: 500; flex: 1; padding: 0 6px; }
@@ -1737,7 +1738,7 @@ function renderTasks() {
     if (thisWeekTasks.length) {
       html += '<div class="week-group">' +
         '<div class="week-group-hdr this-week">' +
-          '<span class="week-group-label">השבוע</span>' +
+          '<span class="week-group-label">משימות שנוצרו השבוע</span>' +
           '<span class="week-group-date-range">' + weekDateRange(todayWeekStart) + '</span>' +
           '<span class="week-group-count">' + thisWeekTasks.length + '</span>' +
         '</div>';
@@ -1748,7 +1749,7 @@ function renderTasks() {
     if (lastWeekTasks.length) {
       html += '<div class="week-group">' +
         '<div class="week-group-hdr">' +
-          '<span class="week-group-label">שבוע שעבר</span>' +
+          '<span class="week-group-label">משימות שנוצרו שבוע שעבר</span>' +
           '<span class="week-group-date-range">' + weekDateRange(lastWeekStart) + '</span>' +
           '<span class="week-group-count">' + lastWeekTasks.length + '</span>' +
         '</div>';
