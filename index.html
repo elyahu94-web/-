@@ -413,13 +413,12 @@ select.filter-sel {
 .task-card.pri-high::after { background: #ef4444; width: 7px; }
 .task-card.pri-high:hover { background: linear-gradient(135deg, rgba(220,38,38,.7) 0%, rgba(185,28,28,.55) 100%); }
 .task-card.pri-mid {
-  background: linear-gradient(135deg, rgba(217,119,6,.45) 0%, rgba(180,83,9,.35) 100%);
-  border-color: #f59e0b;
+  background: rgba(251,191,36,.10);
+  border-color: rgba(251,191,36,.55);
   border-width: 2px;
-  box-shadow: 0 0 0 1px rgba(245,158,11,.3), 0 4px 16px rgba(217,119,6,.25);
 }
-.task-card.pri-mid::after { background: #f59e0b; width: 7px; }
-.task-card.pri-mid:hover { background: linear-gradient(135deg, rgba(217,119,6,.6) 0%, rgba(180,83,9,.5) 100%); }
+.task-card.pri-mid::after { background: var(--yellow); width: 5px; }
+.task-card.pri-mid:hover { background: rgba(251,191,36,.16); }
 /* Per-card color accent via data-color */
 .task-card[data-color="blue"]   { border-color: rgba(79,142,247,.6); }
 .task-card[data-color="blue"]::after { background: var(--accent); }
@@ -1475,12 +1474,11 @@ function recurringAppearsInMonth(t, year, month) {
   // month = 0-based
   if (!t.recurring) return false;
   if (t.recurType === 'monthly') {
-    // Has specific days in month → appears every month
+    // Monthly recurring → appears in every future month
     return t.recurMonthDays && t.recurMonthDays.length > 0;
-  } else {
-    // Weekly → appears every week → appears in every month
-    return t.recurDays && t.recurDays.length > 0;
   }
+  // Weekly → only show in "next week" box, NOT in monthly summary
+  return false;
 }
 
 function recurringAppearsInWeek(t) {
@@ -1571,9 +1569,27 @@ function renderSummaryBoxes(allTasks, today) {
   }
 
   monthGroups.forEach(function(mg) {
+    function miniCardForMonth(t) {
+      var nd = normalizeDate(t.deadline);
+      var dp = nd && nd > '1901-01-01' ? nd.split('-') : null;
+      var dateStr = '';
+      if (dp) {
+        dateStr = dp[2]+'/'+dp[1];
+      } else if (t.recurring && t.recurType === 'monthly' && t.recurMonthDays && t.recurMonthDays.length) {
+        var mNum = String(mg.month + 1).padStart(2,'0');
+        dateStr = t.recurMonthDays.slice().sort(function(a,b){return a-b;})
+          .map(function(d){ return String(d).padStart(2,'0')+'/'+mNum; }).join(', ');
+      }
+      var priColor = t.priority==='גבוהה' ? '#f87171' : t.priority==='נמוכה' ? '#34d399' : '#fbbf24';
+      return '<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--surface3);border-radius:7px;margin-bottom:4px">' +
+        '<div style="width:6px;height:6px;border-radius:50%;background:'+priColor+';flex-shrink:0"></div>' +
+        '<span style="font-size:.75rem;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(t.title)+'</span>' +
+        '<span style="font-size:.65rem;color:var(--text3);flex-shrink:0;max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+dateStr+'</span>' +
+      '</div>';
+    }
     html += '<div class="summary-box summary-month">' +
       '<div class="summary-box-hdr">🗓️ '+mg.name+' <span class="summary-count">'+mg.tasks.length+'</span></div>' +
-      mg.tasks.map(miniCard).join('') +
+      mg.tasks.map(miniCardForMonth).join('') +
     '</div>';
   });
 
