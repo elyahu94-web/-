@@ -1782,13 +1782,7 @@ function renderSummaryBoxes(allTasks, today) {
   html += '<div class="summary-section-title">📊 תצפית קדימה — ' + thisYear + '</div>';
   html += '<div class="summary-boxes">';
 
-  if (nextWeekTasks.length) {
-    html += '<div class="summary-box summary-week" onclick="openWeekModal()" style="cursor:pointer" title="לחץ לפתיחה">' +
-      '<div class="summary-box-hdr">📅 משימות לשבוע הבא <span class="summary-count">'+nextWeekTasks.length+'</span></div>' +
-      nextWeekTasks.slice(0,3).map(miniCard).join('') +
-      '<div style="text-align:center;font-size:.75rem;color:#22d3ee;padding:6px 0;font-weight:700">👆 לחץ לצפייה בכל המשימות</div>' +
-    '</div>';
-  }
+
 
   monthGroups.forEach(function(mg) {
     function miniCardForMonth(t) {
