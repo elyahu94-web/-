@@ -603,6 +603,9 @@ select.filter-sel {
   max-width: 1100px;
   margin: 0 auto 12px auto;
   width: 100%;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
 }
 @media (max-width: 900px) { .weeks-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 600px) { .weeks-grid { grid-template-columns: 1fr; } }
@@ -1150,12 +1153,16 @@ function checkRecurringReset() {
     if (!t.recurring || !t.done) return;
 
     if (t.recurType !== 'monthly' && t.recurDays && t.recurDays.length) {
-      // Weekly — reset if last done was in a previous week
+      // Weekly — reset only if task was done in a PREVIOUS week
       var lastDoneWeek = t.lastDoneWeek || '';
-      if (lastDoneWeek !== thisWeekStart) {
+      if (lastDoneWeek && lastDoneWeek !== thisWeekStart) {
         t.done = false;
         t.lastDoneWeek = '';
         changed = true;
+      } else if (!lastDoneWeek) {
+        // No lastDoneWeek saved — don't reset (might have loaded from old data)
+        // Just set it so next reload won't reset
+        // Don't touch done state
       }
     }
 
