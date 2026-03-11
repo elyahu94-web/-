@@ -757,7 +757,10 @@ select.filter-sel {
           <label style="position:absolute;top:-8px;right:10px;background:var(--surface2);padding:0 4px;font-size:.65rem;font-weight:700;color:var(--accent);z-index:1;border-radius:3px">🎯 תאריך יעד</label>
           <input class="input" id="newDeadline" type="date" style="padding-top:14px">
         </div>
-        <input class="input" id="newTime" type="time" placeholder="שעה">
+        <div style="position:relative">
+          <label style="position:absolute;top:-8px;right:10px;background:var(--surface2);padding:0 4px;font-size:.65rem;font-weight:700;color:var(--text3);z-index:1;border-radius:3px">🕐 שעה</label>
+          <input class="input" id="newTime" type="time" style="padding-top:14px">
+        </div>
         <input class="input" id="newAssign" placeholder="אחראי">
         <div class="tags-wrap form-full" id="newTagsWrap" onclick="document.getElementById('newTagIn').focus()">
           <span id="newTagsDisplay"></span>
@@ -835,10 +838,10 @@ select.filter-sel {
       <option value="בינונית">🟡 רגיל</option>
       <option value="נמוכה">🟢 נמוך</option>
     </select>
-    <label>תאריך ושעה</label>
+    <label>🎯 תאריך יעד לביצוע</label>
     <div style="display:flex;gap:8px">
-      <input class="input" id="eDate" type="date" style="flex:2">
-      <input class="input" id="eTime" type="time" style="flex:1">
+      <input class="input" id="eDate" type="date" style="flex:2" placeholder="תאריך יעד">
+      <input class="input" id="eTime" type="time" style="flex:1" placeholder="שעה">
     </div>
     <label>אחראי</label>
     <input class="input" id="eAssign">
