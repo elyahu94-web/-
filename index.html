@@ -1015,6 +1015,18 @@ select.filter-sel {
 
 <div id="toast"></div>
 
+<div class="overlay" id="reopenModal">
+  <div class="modal" style="max-width:360px">
+    <div class="confirm-icon">📂</div>
+    <div class="confirm-title" id="reopenTitle"></div>
+    <div class="confirm-sub">לפתוח את המשימה מחדש?</div>
+    <div class="modal-btns">
+      <button class="btn-green" onclick="confirmReopen()">📂 כן, פתח מחדש</button>
+      <button class="btn-cancel" onclick="closeReopen()">ביטול</button>
+    </div>
+  </div>
+</div>
+
 <!-- INSTALL BANNER -->
 <div id="installBanner">
   <div class="install-text">
@@ -1283,14 +1295,28 @@ function toggleDone(id) {
   var t = tasks.find(function(x) { return x.id == id; });
   if (!t) return;
   if (t.done) {
-    t.done = false;
-    persist(function() { showToast('📂 משימה נפתחה מחדש'); });
-    renderTasks(); updateStats();
+    _pendingId = t.id;
+    document.getElementById('reopenTitle').textContent = t.title;
+    document.getElementById('reopenModal').classList.add('on');
     return;
   }
   _pendingId = t.id;
   document.getElementById('confirmTitle').textContent = t.title;
   document.getElementById('confirmModal').classList.add('on');
+}
+
+function confirmReopen() {
+  var t = tasks.find(function(x) { return x.id == _pendingId; });
+  closeReopen();
+  if (!t) return;
+  t.done = false;
+  renderTasks(); updateStats();
+  persist(function() { showToast('📂 משימה נפתחה מחדש'); });
+}
+
+function closeReopen() {
+  document.getElementById('reopenModal').classList.remove('on');
+  _pendingId = null;
 }
 
 function confirmDone() {
@@ -2186,6 +2212,9 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   document.getElementById('editModal').addEventListener('click', function(e) {
     if (e.target === this) closeEdit();
+  });
+  document.getElementById('reopenModal').addEventListener('click', function(e) {
+    if (e.target === this) closeReopen();
   });
   document.getElementById('confirmModal').addEventListener('click', function(e) {
     if (e.target === this) closeConfirm();
