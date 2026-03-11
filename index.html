@@ -385,31 +385,49 @@ select.filter-sel {
 /* TASK CARD */
 .task-card {
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   border-radius: 14px;
   padding: 13px 15px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   display: flex;
   gap: 11px;
   align-items: flex-start;
-  transition: border-color .2s, transform .15s, opacity .3s;
+  transition: border-color .2s, transform .15s, opacity .3s, background .2s;
   position: relative;
   overflow: hidden;
 }
-.task-card:hover { border-color: var(--border2); transform: translateX(-2px); }
+.task-card::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 4px;
+  border-radius: 0 12px 12px 0;
+}
+.task-card:hover { transform: translateX(-2px); }
 .task-card.pri-high {
-  background: rgba(248,113,113,.13);
-  border-color: rgba(248,113,113,.45);
+  background: rgba(248,113,113,.10);
+  border-color: #f87171;
 }
-.task-card.pri-high:hover {
-  background: rgba(248,113,113,.18);
-  border-color: rgba(248,113,113,.65);
-}
+.task-card.pri-high::after { background: #f87171; }
+.task-card.pri-high:hover { background: rgba(248,113,113,.16); }
 .task-card.pri-mid {
   background: rgba(251,191,36,.06);
-  border-color: rgba(251,191,36,.3);
+  border-color: rgba(251,191,36,.5);
 }
-.task-card.done { opacity: .45; }
+.task-card.pri-mid::after { background: var(--yellow); }
+.task-card.pri-mid:hover { background: rgba(251,191,36,.1); }
+/* Per-card color accent via data-color */
+.task-card[data-color="blue"]   { border-color: rgba(79,142,247,.6); }
+.task-card[data-color="blue"]::after { background: var(--accent); }
+.task-card[data-color="purple"] { border-color: rgba(167,139,250,.6); }
+.task-card[data-color="purple"]::after { background: var(--purple); }
+.task-card[data-color="cyan"]   { border-color: rgba(34,211,238,.5); }
+.task-card[data-color="cyan"]::after { background: var(--cyan); }
+.task-card[data-color="green"]  { border-color: rgba(52,211,153,.5); }
+.task-card[data-color="green"]::after { background: var(--green); }
+.task-card[data-color="orange"] { border-color: rgba(251,146,60,.5); }
+.task-card[data-color="orange"]::after { background: var(--orange); }
+.task-card.done { opacity: .4; }
 .task-card.done .task-title { text-decoration: line-through; color: var(--text2); }
 
 .task-check {
@@ -735,7 +753,10 @@ select.filter-sel {
           <option value="בינונית" selected>🟡 רגיל</option>
           <option value="נמוכה">🟢 נמוך</option>
         </select>
-        <input class="input" id="newDeadline" type="date">
+        <div style="position:relative">
+          <label style="position:absolute;top:-8px;right:10px;background:var(--surface2);padding:0 4px;font-size:.65rem;font-weight:700;color:var(--accent);z-index:1;border-radius:3px">🎯 תאריך יעד</label>
+          <input class="input" id="newDeadline" type="date" style="padding-top:14px">
+        </div>
         <input class="input" id="newTime" type="time" placeholder="שעה">
         <input class="input" id="newAssign" placeholder="אחראי">
         <div class="tags-wrap form-full" id="newTagsWrap" onclick="document.getElementById('newTagIn').focus()">
@@ -1297,30 +1318,46 @@ function getFiltered() {
   });
 }
 
+// ===== NORMALIZE DATE to yyyy-MM-dd =====
+function normalizeDate(dl) {
+  if (!dl) return '';
+  var s = String(dl).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0,10);
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) {
+    var p = s.split('/');
+    return p[2] + '-' + p[1].padStart(2,'0') + '-' + p[0].padStart(2,'0');
+  }
+  try { var d = new Date(s); if (!isNaN(d.getTime())) return d.toISOString().substring(0,10); } catch(e){}
+  return '';
+}
+
+// Color palette for cards (cycles by index)
+var CARD_COLORS = ['blue','purple','cyan','green','orange','blue','purple','cyan','green','orange'];
+
 // ===== SORT TASKS =====
 function sortTasks(arr) {
   return arr.slice().sort(function(a, b) {
-    // Tasks with no deadline go to bottom
-    var aHasDate = a.deadline && a.deadline > '1900-01-01';
-    var bHasDate = b.deadline && b.deadline > '1900-01-01';
+    var aDeadline = normalizeDate(a.deadline);
+    var bDeadline = normalizeDate(b.deadline);
+    var aHasDate = aDeadline && aDeadline > '1900-01-01';
+    var bHasDate = bDeadline && bDeadline > '1900-01-01';
+
+    // Tasks with deadline come before tasks without
     if (aHasDate && !bHasDate) return -1;
     if (!aHasDate && bHasDate) return 1;
 
-    // Sort by date
-    if (aHasDate && bHasDate && a.deadline !== b.deadline) {
-      return a.deadline.localeCompare(b.deadline);
-    }
+    // Both have deadline — sort by date
+    if (aHasDate && bHasDate && aDeadline !== bDeadline)
+      return aDeadline.localeCompare(bDeadline);
 
-    // Same date — sort by time (tasks with time before tasks without)
-    var aTime = a.time || '';
-    var bTime = b.time || '';
+    // Same date — sort by time
+    var aTime = a.time || '', bTime = b.time || '';
     if (aTime && !bTime) return -1;
     if (!aTime && bTime) return 1;
     if (aTime && bTime && aTime !== bTime) return aTime.localeCompare(bTime);
 
-    // Same date+time — sort by creation time (newest first)
-    var aCreated = a.createdAt || '';
-    var bCreated = b.createdAt || '';
+    // Same date+time — newest creation first
+    var aCreated = a.createdAt || '', bCreated = b.createdAt || '';
     return bCreated.localeCompare(aCreated);
   });
 }
@@ -1351,20 +1388,32 @@ function renderTasks() {
   el.innerHTML = html;
 }
 
+// index to color assignment (stable per task id)
+function cardColor(t) {
+  if (t.priority === 'גבוהה') return '';  // red handled by pri-high class
+  if (t.priority === 'בינונית') return ''; // yellow handled by pri-mid class
+  var colors = ['blue','purple','cyan','green','orange'];
+  var idx = Math.abs(parseInt(String(t.id).slice(-3)) || 0) % colors.length;
+  return colors[idx];
+}
+
 function taskHTML(t, today) {
   var priClass = t.priority === 'גבוהה' ? 'pri-high' : (t.priority === 'בינונית' ? 'pri-mid' : '');
+  var color = cardColor(t);
 
   var priBadge = '';
-  if (t.priority === 'גבוהה') priBadge = '<span class="badge b-high" style="background:rgba(248,113,113,.3);border-color:rgba(248,113,113,.6);font-weight:800">🚨 דחוף</span>';
+  if (t.priority === 'גבוהה') priBadge = '<span class="badge" style="background:rgba(248,113,113,.25);color:#ff8080;border:1.5px solid rgba(248,113,113,.7);font-weight:800;font-size:.75rem">🚨 דחוף</span>';
   else if (t.priority === 'נמוכה') priBadge = '<span class="badge b-low">🟢 נמוך</span>';
 
+  // Use normalizeDate for reliable comparison
+  var nd = normalizeDate(t.deadline);
   var dateBadge = '';
-  if (t.deadline && t.deadline.substring(0,4) > '1900') {
-    var dp = t.deadline.split('-');
-    var dateStr = dp[2]+'/'+dp[1];
-    if (t.deadline < today) dateBadge = '<span class="badge b-overdue">⚠️ ' + dateStr + '</span>';
-    else if (t.deadline === today) dateBadge = '<span class="badge b-today">📅 היום</span>';
-    else dateBadge = '<span class="badge b-date">📅 ' + dateStr + '</span>';
+  if (nd && nd > '1900-01-01') {
+    var dp = nd.split('-');
+    var dateStr = dp[2]+'/'+dp[1]+'/'+dp[0];
+    if (nd < today) dateBadge = '<span class="badge b-overdue" style="font-size:.75rem;padding:3px 9px">⚠️ באיחור: ' + dateStr + '</span>';
+    else if (nd === today) dateBadge = '<span class="badge b-today" style="font-size:.75rem;padding:3px 9px">📅 היום: ' + dateStr + '</span>';
+    else dateBadge = '<span class="badge b-date" style="font-size:.75rem;padding:3px 9px">🎯 יעד: ' + dateStr + '</span>';
   }
 
   var timeBadge = t.time ? '<span class="badge b-time">🕐 ' + esc(t.time) + '</span>' : '';
@@ -1393,65 +1442,31 @@ function taskHTML(t, today) {
 
   var offlineBadge = t._pendingSync ? '<span class="badge b-offline">⏳ ממתין לסנכרון</span>' : '';
 
-  // Format createdAt
-  var createdStr = '';
+  // Format createdAt for bottom row
+  var createdRowStr = '';
   if (t.createdAt) {
     try {
-      var cd = new Date(t.createdAt);
-      if (!isNaN(cd.getTime())) {
-        createdStr = cd.getDate() + '/' + (cd.getMonth()+1) + '/' + cd.getFullYear() +
-          ' ' + String(cd.getHours()).padStart(2,'0') + ':' + String(cd.getMinutes()).padStart(2,'0');
+      var cd2 = new Date(t.createdAt);
+      if (!isNaN(cd2.getTime())) {
+        createdRowStr = cd2.getDate() + '/' + (cd2.getMonth()+1) + '/' + cd2.getFullYear() +
+          ' ' + String(cd2.getHours()).padStart(2,'0') + ':' + String(cd2.getMinutes()).padStart(2,'0');
       }
     } catch(e) {}
   }
 
-  // Normalize deadline to yyyy-MM-dd regardless of source format
-  var normalizedDeadline = '';
-  if (t.deadline) {
-    var dl = String(t.deadline).trim();
-    // Already yyyy-MM-dd
-    if (/^\d{4}-\d{2}-\d{2}/.test(dl)) {
-      normalizedDeadline = dl.substring(0, 10);
-    // dd/MM/yyyy from Sheet
-    } else if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(dl)) {
-      var dp2 = dl.split('/');
-      normalizedDeadline = dp2[2] + '-' + dp2[1].padStart(2,'0') + '-' + dp2[0].padStart(2,'0');
-    // Any other parseable date
-    } else {
-      try {
-        var pd = new Date(dl);
-        if (!isNaN(pd.getTime())) {
-          normalizedDeadline = pd.getFullYear() + '-' +
-            String(pd.getMonth()+1).padStart(2,'0') + '-' +
-            String(pd.getDate()).padStart(2,'0');
-        }
-      } catch(e) {}
-    }
-  }
-
-  // Format deadline for display (dd/mm/yyyy)
-  var deadlineFullStr = '';
-  if (normalizedDeadline && normalizedDeadline.substring(0,4) > '1900') {
-    var ddp = normalizedDeadline.split('-');
-    deadlineFullStr = ddp[2] + '/' + ddp[1] + '/' + ddp[0];
-    if (t.time) deadlineFullStr += ' ' + t.time;
-  }
-
   var datesRow = '';
-  if (createdStr || deadlineFullStr) {
+  if (createdRowStr) {
     datesRow = '<div class="task-dates">' +
-      (createdStr ? '<span title="תאריך יצירה">✏️ נוצר: ' + createdStr + '</span>' : '') +
-      (createdStr && deadlineFullStr ? '<span class="task-dates-sep">·</span>' : '') +
-      (deadlineFullStr ? '<span title="תאריך יעד" style="color:' + (normalizedDeadline < today ? 'var(--red)' : normalizedDeadline === today ? 'var(--yellow)' : 'var(--text3)') + '">🎯 יעד: ' + deadlineFullStr + (normalizedDeadline < today ? ' ⚠️' : normalizedDeadline === today ? ' (היום)' : '') + '</span>' : '') +
+      '<span>✏️ נוצר: ' + createdRowStr + '</span>' +
     '</div>';
   }
 
-  return '<div class="task-card ' + priClass + (t.done ? ' done' : '') + '" data-id="' + t.id + '">' +
+  return '<div class="task-card ' + priClass + (t.done ? ' done' : '') + '" data-id="' + t.id + '" data-color="' + color + '">' +
     '<div class="task-check' + (t.done ? ' checked' : '') + '" onclick="toggleDone(' + t.id + ')">' + (t.done ? '✓' : '') + '</div>' +
     '<div class="task-body">' +
       '<div class="task-title">' + esc(t.title) + '</div>' +
       (t.desc ? '<div class="task-desc">' + esc(t.desc) + '</div>' : '') +
-      '<div class="task-meta">' + priBadge + projBadge + recurBadge + assignBadge + tagsBadge + offlineBadge + '</div>' +
+      '<div class="task-meta">' + priBadge + dateBadge + timeBadge + projBadge + recurBadge + assignBadge + tagsBadge + offlineBadge + '</div>' +
       datesRow +
     '</div>' +
     '<div class="task-actions">' +
