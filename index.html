@@ -515,6 +515,16 @@ select.filter-sel {
 .btn-cal:hover { border-color: var(--green); color: var(--green); background: rgba(52,211,153,.08); }
 
 /* SUMMARY BOXES */
+.summary-section { margin-bottom: 20px; }
+.summary-section-title {
+  font-size: .72rem;
+  font-weight: 800;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  margin-bottom: 10px;
+  padding: 0 4px;
+}
 .summary-boxes {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1390,12 +1400,17 @@ function getFiltered() {
 function normalizeDate(dl) {
   if (!dl) return '';
   var s = String(dl).trim();
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0,10);
+  // Reject Google Sheets epoch garbage (1899-12-30)
+  if (s.startsWith('1899') || s.startsWith('1900-01-00')) return '';
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+    var r = s.substring(0,10);
+    return r < '1901-01-01' ? '' : r; // reject any pre-1901 date
+  }
   if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) {
     var p = s.split('/');
     return p[2] + '-' + p[1].padStart(2,'0') + '-' + p[0].padStart(2,'0');
   }
-  try { var d = new Date(s); if (!isNaN(d.getTime())) return d.toISOString().substring(0,10); } catch(e){}
+  try { var d = new Date(s); if (!isNaN(d.getTime())) { var r2 = d.toISOString().substring(0,10); return r2 < '1901-01-01' ? '' : r2; } } catch(e){}
   return '';
 }
 
@@ -1453,37 +1468,58 @@ function formatWeekLabel(weekStart, todayWeekStart) {
 
 // ===== SUMMARY BOXES =====
 function renderSummaryBoxes(open, today) {
+  var MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+  var nowD = new Date(today);
+  var thisYear = nowD.getFullYear();
   var todayWeekStart = getWeekStart(today);
   var nextWeekStart  = addDays(todayWeekStart, 7);
   var nextWeekEnd    = addDays(todayWeekStart, 13);
 
-  // Next month range
-  var nowD = new Date(today);
-  var nextMonthStart = new Date(nowD.getFullYear(), nowD.getMonth()+1, 1).toISOString().split('T')[0];
-  var nextMonthEnd   = new Date(nowD.getFullYear(), nowD.getMonth()+2, 0).toISOString().split('T')[0];
+  // Next week tasks
+  var nextWeekTasks = open.filter(function(t){
+    var nd = normalizeDate(t.deadline);
+    return nd >= nextWeekStart && nd <= nextWeekEnd;
+  });
 
-  var nextWeekTasks  = open.filter(function(t){ var nd=normalizeDate(t.deadline); return nd>=nextWeekStart && nd<=nextWeekEnd; });
-  var nextMonthTasks = open.filter(function(t){ var nd=normalizeDate(t.deadline); return nd>=nextMonthStart && nd<=nextMonthEnd; });
+  // All months of current year from this month onward (excluding current month)
+  var monthGroups = [];
+  for (var m = nowD.getMonth() + 1; m < 12; m++) {
+    var mStart = new Date(thisYear, m, 1).toISOString().split('T')[0];
+    var mEnd   = new Date(thisYear, m+1, 0).toISOString().split('T')[0];
+    var mTasks = open.filter(function(t){
+      var nd = normalizeDate(t.deadline);
+      return nd >= mStart && nd <= mEnd;
+    });
+    // Also include recurring tasks that have no deadline (will recur this month)
+    var recurTasks = open.filter(function(t){
+      if (!t.recurring || normalizeDate(t.deadline)) return false;
+      if (t.recurType === 'monthly' && t.recurMonthDays && t.recurMonthDays.length) return true;
+      return false;
+    });
+    var allTasks = mTasks.concat(recurTasks.filter(function(rt){
+      return !mTasks.find(function(mt){ return mt.id === rt.id; });
+    }));
+    if (allTasks.length) monthGroups.push({ name: MONTHS[m] + ' ' + thisYear, tasks: allTasks });
+  }
 
-  if (!nextWeekTasks.length && !nextMonthTasks.length) return '';
-
-  var months = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
-  var nextMonthD = new Date(nowD.getFullYear(), nowD.getMonth()+1, 1);
-  var nextMonthName = months[nextMonthD.getMonth()];
+  var hasAnything = nextWeekTasks.length || monthGroups.length;
+  if (!hasAnything) return '';
 
   function miniCard(t) {
     var nd = normalizeDate(t.deadline);
-    var dp = nd ? nd.split('-') : null;
-    var dateStr = dp ? dp[2]+'/'+dp[1] : '';
+    var dp = nd && nd > '1900-01-01' ? nd.split('-') : null;
+    var dateStr = dp ? dp[2]+'/'+dp[1] : (t.recurring ? '🔁' : '');
     var priColor = t.priority==='גבוהה' ? '#f87171' : t.priority==='נמוכה' ? '#34d399' : '#fbbf24';
     return '<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--surface3);border-radius:7px;margin-bottom:4px">' +
       '<div style="width:6px;height:6px;border-radius:50%;background:'+priColor+';flex-shrink:0"></div>' +
       '<span style="font-size:.75rem;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(t.title)+'</span>' +
-      (dateStr ? '<span style="font-size:.68rem;color:var(--text3)">'+dateStr+'</span>' : '') +
+      '<span style="font-size:.68rem;color:var(--text3);flex-shrink:0">'+dateStr+'</span>' +
     '</div>';
   }
 
-  var html = '<div class="summary-boxes">';
+  var html = '<div class="summary-section">';
+  html += '<div class="summary-section-title">📊 תצפית קדימה — ' + thisYear + '</div>';
+  html += '<div class="summary-boxes">';
 
   if (nextWeekTasks.length) {
     html += '<div class="summary-box summary-week">' +
@@ -1491,14 +1527,16 @@ function renderSummaryBoxes(open, today) {
       nextWeekTasks.map(miniCard).join('') +
     '</div>';
   }
-  if (nextMonthTasks.length) {
-    html += '<div class="summary-box summary-month">' +
-      '<div class="summary-box-hdr">🗓️ '+nextMonthName+' <span class="summary-count">'+nextMonthTasks.length+'</span></div>' +
-      nextMonthTasks.map(miniCard).join('') +
-    '</div>';
-  }
 
-  html += '</div>';
+  monthGroups.forEach(function(mg) {
+    html += '<div class="summary-box summary-month">' +
+      '<div class="summary-box-hdr">🗓️ '+mg.name+' <span class="summary-count">'+mg.tasks.length+'</span></div>' +
+      mg.tasks.map(miniCard).join('') +
+    '</div>';
+  });
+
+  html += '</div>'; // summary-boxes
+  html += '</div>'; // summary-section
   return html;
 }
 
