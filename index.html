@@ -1545,51 +1545,67 @@ function renderTasks() {
   var el = document.getElementById('tasksList');
   var filtered = getFiltered();
   var today = new Date().toISOString().split('T')[0];
-  var todayWeekStart = getWeekStart(today);
+  var todayWeekStart  = getWeekStart(today);
+  var lastWeekStart   = addDays(todayWeekStart, -7);
+  var thisMonthStart  = today.substring(0,7) + '-01';
 
-  var open = sortTasksByCreated(filtered.filter(function(t) { return !t.done; }));
-  var done = sortTasks(filtered.filter(function(t) { return t.done; }));
+  var allOpen = sortTasksByCreated(filtered.filter(function(t) { return !t.done; }));
+  var done    = sortTasks(filtered.filter(function(t) { return t.done; }));
 
   if (!filtered.length) {
     el.innerHTML = '<div class="empty"><div class="empty-icon">🎯</div><div class="empty-text">אין משימות להצגה</div></div>';
     return;
   }
 
+  // ── Split: this week + last week visible, everything older → archive ──
+  var thisWeekTasks = [], lastWeekTasks = [], archiveTasks = [];
+  allOpen.forEach(function(t) {
+    var created = (t.createdAt || today).substring(0,10);
+    var ws = getWeekStart(created);
+    if (ws === todayWeekStart)      thisWeekTasks.push(t);
+    else if (ws === lastWeekStart)  lastWeekTasks.push(t);
+    else                            archiveTasks.push(t);
+  });
+
+  // Also: any open task whose deadline passed more than a month ago → archive
+  // (move overdue-old from thisWeek/lastWeek to archive if needed — keep simple)
+
   var html = '';
 
-  // ── Summary boxes (next week / next month) ──
+  // ── Tatzpit Kadima (summary forward) ──
   if (currentFilter === 'all' || currentFilter === 'open') {
-    html += renderSummaryBoxes(open, today);
+    html += renderSummaryBoxes(allOpen, today);
   }
 
-  // ── Open tasks grouped by creation week — 2 columns ──
-  if (open.length) {
-    var weeks = [];
-    var weekMap = {};
-    open.forEach(function(t) {
-      var created = t.createdAt ? t.createdAt.substring(0,10) : today;
-      var ws = getWeekStart(created);
-      if (!weekMap[ws]) { weekMap[ws] = []; weeks.push(ws); }
-      weekMap[ws].push(t);
-    });
-    // Newest week first
-    weeks.sort(function(a,b){ return b.localeCompare(a); });
+  // ── Tatzpit Achora (archive — tasks older than last week) ──
+  if (archiveTasks.length && (currentFilter === 'all' || currentFilter === 'open')) {
+    html += renderArchiveBoxes(archiveTasks, today);
+  }
 
-    // Pair weeks into rows of 2
+  // ── This week + Last week side by side ──
+  if (thisWeekTasks.length || lastWeekTasks.length) {
     html += '<div class="weeks-grid">';
-    weeks.forEach(function(ws) {
-      var label = formatWeekLabel(ws, todayWeekStart);
-      var wTasks = weekMap[ws];
-      wTasks.sort(function(a,b){ return (a.createdAt||'').localeCompare(b.createdAt||''); });
-      var isThisWeek = ws === todayWeekStart;
+
+    if (thisWeekTasks.length) {
       html += '<div class="week-group">' +
-        '<div class="week-group-hdr' + (isThisWeek ? ' this-week' : '') + '">' +
-          '<span class="week-group-label">' + label + '</span>' +
-          '<span class="week-group-count">' + wTasks.length + '</span>' +
+        '<div class="week-group-hdr this-week">' +
+          '<span class="week-group-label">השבוע</span>' +
+          '<span class="week-group-count">' + thisWeekTasks.length + '</span>' +
         '</div>';
-      wTasks.forEach(function(t) { html += taskHTML(t, today); });
+      thisWeekTasks.forEach(function(t) { html += taskHTML(t, today); });
       html += '</div>';
-    });
+    }
+
+    if (lastWeekTasks.length) {
+      html += '<div class="week-group">' +
+        '<div class="week-group-hdr">' +
+          '<span class="week-group-label">שבוע שעבר</span>' +
+          '<span class="week-group-count">' + lastWeekTasks.length + '</span>' +
+        '</div>';
+      lastWeekTasks.forEach(function(t) { html += taskHTML(t, today); });
+      html += '</div>';
+    }
+
     html += '</div>';
   }
 
@@ -1601,6 +1617,50 @@ function renderTasks() {
   }
 
   el.innerHTML = html;
+}
+
+// ===== ARCHIVE BOXES (backward — older tasks by month) =====
+function renderArchiveBoxes(archiveTasks, today) {
+  if (!archiveTasks.length) return '';
+  var MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+
+  // Group by month of createdAt
+  var monthMap = {}, monthKeys = [];
+  archiveTasks.forEach(function(t) {
+    var created = (t.createdAt || today).substring(0,7); // yyyy-MM
+    if (!monthMap[created]) { monthMap[created] = []; monthKeys.push(created); }
+    monthMap[created].push(t);
+  });
+  monthKeys.sort(function(a,b){ return b.localeCompare(a); }); // newest first
+
+  function miniCard(t) {
+    var nd = normalizeDate(t.deadline);
+    var dp = nd && nd > '1901-01-01' ? nd.split('-') : null;
+    var dateStr = dp ? dp[2]+'/'+dp[1] : (t.recurring ? '🔁' : '');
+    var priColor = t.priority==='גבוהה' ? '#f87171' : t.priority==='נמוכה' ? '#34d399' : '#fbbf24';
+    return '<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--surface3);border-radius:7px;margin-bottom:4px">' +
+      '<div style="width:6px;height:6px;border-radius:50%;background:'+priColor+';flex-shrink:0"></div>' +
+      '<span style="font-size:.75rem;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(t.title)+'</span>' +
+      '<span style="font-size:.68rem;color:var(--text3);flex-shrink:0">'+dateStr+'</span>' +
+    '</div>';
+  }
+
+  var html = '<div class="summary-section">';
+  html += '<div class="summary-section-title">📂 תצפית אחורה</div>';
+  html += '<div class="summary-boxes">';
+
+  monthKeys.forEach(function(ym) {
+    var d = new Date(ym + '-01');
+    var label = MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+    var mTasks = monthMap[ym];
+    html += '<div class="summary-box" style="border-color:rgba(88,101,129,.5)">' +
+      '<div class="summary-box-hdr" style="color:var(--text2)">📂 '+label+' <span class="summary-count">'+mTasks.length+'</span></div>' +
+      mTasks.map(miniCard).join('') +
+    '</div>';
+  });
+
+  html += '</div></div>';
+  return html;
 }
 
 // Sort by createdAt ascending (oldest first = appears at top of week group)
