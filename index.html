@@ -597,6 +597,9 @@ select.filter-sel {
   gap: 12px;
   margin-bottom: 12px;
   align-items: start;
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
 }
 @media (max-width: 900px) { .weeks-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 600px) { .weeks-grid { grid-template-columns: 1fr; } }
@@ -1845,8 +1848,24 @@ function renderTasks() {
     else                            archiveTasks.push(t);
   });
 
-  // Also: any open task whose deadline passed more than a month ago → archive
-  // (move overdue-old from thisWeek/lastWeek to archive if needed — keep simple)
+  // Add recurring weekly tasks to thisWeekTasks if not already there
+  filtered.forEach(function(t) {
+    if (!t.recurring || t.done) return;
+    if (t.recurType === 'monthly') return;
+    if (!t.recurDays || !t.recurDays.length) return;
+    // Check if this task recurs on a day that falls in this week
+    var alreadyIn = thisWeekTasks.some(function(x){ return x.id === t.id; });
+    if (!alreadyIn) {
+      for (var di = 0; di < 7; di++) {
+        var checkD = new Date(todayWeekStart);
+        checkD.setDate(checkD.getDate() + di);
+        if (t.recurDays.indexOf(checkD.getDay()) >= 0) {
+          thisWeekTasks.push(t);
+          break;
+        }
+      }
+    }
+  });
 
   var html = '';
 
@@ -1905,16 +1924,14 @@ function renderTasks() {
     html += '</div>';
 
     // Col 3: next week (left)
-    html += '<div class="week-group" onclick="openWeekModal()" style="cursor:pointer">';
+    html += '<div class="week-group">';
     html += '<div class="week-group-hdr next-week">' +
       '<span class="week-group-label">שבוע הבא</span>' +
       '<span class="week-group-date-range">' + weekDateRange(nextWeekStartStr) + '</span>' +
       '<span class="week-group-count">' + nextWeekColTasks.length + '</span>' +
     '</div>';
     if (nextWeekColTasks.length) {
-      nextWeekColTasks.slice(0,3).forEach(function(t) { html += taskHTML(t, today); });
-      if (nextWeekColTasks.length > 3) html += '<div style="text-align:center;font-size:.75rem;color:#22d3ee;padding:6px 0;font-weight:700">👆 לחץ לצפייה בכל המשימות</div>';
-      else html += '<div style="text-align:center;font-size:.75rem;color:#22d3ee;padding:6px 0;font-weight:700">👆 לחץ לצפייה</div>';
+      nextWeekColTasks.forEach(function(t) { html += taskHTML(t, today); });
     } else {
       html += '<div style="color:var(--text3);font-size:.8rem;padding:8px;text-align:center">אין משימות לשבוע הבא</div>';
     }
