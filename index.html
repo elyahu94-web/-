@@ -551,7 +551,15 @@ select.filter-sel {
 }
 
 /* WEEK GROUPS */
-.week-group { margin-bottom: 18px; }
+.weeks-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: start;
+}
+@media (max-width: 700px) { .weeks-grid { grid-template-columns: 1fr; } }
+.week-group { margin-bottom: 0; }
 .week-group-hdr {
   display: flex;
   align-items: center;
@@ -1460,7 +1468,8 @@ function renderSummaryBoxes(open, today) {
   if (!nextWeekTasks.length && !nextMonthTasks.length) return '';
 
   var months = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
-  var nextMonthName = months[new Date(nextMonthStart).getMonth()];
+  var nextMonthD = new Date(nowD.getFullYear(), nowD.getMonth()+1, 1);
+  var nextMonthName = months[nextMonthD.getMonth()];
 
   function miniCard(t) {
     var nd = normalizeDate(t.deadline);
@@ -1515,10 +1524,9 @@ function renderTasks() {
     html += renderSummaryBoxes(open, today);
   }
 
-  // ── Open tasks grouped by creation week ──
+  // ── Open tasks grouped by creation week — 2 columns ──
   if (open.length) {
-    // Group by week of createdAt (oldest week first, within each week oldest task first)
-    var weeks = []; // [{weekStart, tasks[]}]
+    var weeks = [];
     var weekMap = {};
     open.forEach(function(t) {
       var created = t.createdAt ? t.createdAt.substring(0,10) : today;
@@ -1526,26 +1534,25 @@ function renderTasks() {
       if (!weekMap[ws]) { weekMap[ws] = []; weeks.push(ws); }
       weekMap[ws].push(t);
     });
-    // Sort weeks: current week first, then going backwards
+    // Newest week first
     weeks.sort(function(a,b){ return b.localeCompare(a); });
 
+    // Pair weeks into rows of 2
+    html += '<div class="weeks-grid">';
     weeks.forEach(function(ws) {
       var label = formatWeekLabel(ws, todayWeekStart);
       var wTasks = weekMap[ws];
-      // Within each week: oldest creation last (newest first → reverse for "last added at bottom")
-      wTasks.sort(function(a,b){
-        var ac = a.createdAt||'', bc = b.createdAt||'';
-        return ac.localeCompare(bc); // oldest first, newest last
-      });
+      wTasks.sort(function(a,b){ return (a.createdAt||'').localeCompare(b.createdAt||''); });
       var isThisWeek = ws === todayWeekStart;
       html += '<div class="week-group">' +
         '<div class="week-group-hdr' + (isThisWeek ? ' this-week' : '') + '">' +
           '<span class="week-group-label">' + label + '</span>' +
-          '<span class="week-group-count">' + wTasks.length + ' משימות</span>' +
+          '<span class="week-group-count">' + wTasks.length + '</span>' +
         '</div>';
       wTasks.forEach(function(t) { html += taskHTML(t, today); });
       html += '</div>';
     });
+    html += '</div>';
   }
 
   // ── Done tasks ──
