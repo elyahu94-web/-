@@ -1194,7 +1194,6 @@ function init() {
   }
 
   loadTasks();
-  checkRecurringReset();
 }
 
 // ===== LOAD =====
@@ -1203,6 +1202,7 @@ function loadTasks() {
   apiCall('getTasks', null, function(data) {
     tasks = data || [];
     localStorage.setItem('tasks_cache', JSON.stringify(tasks));
+    checkRecurringReset();
     renderTasks();
     updateStats();
     refreshLists();
@@ -1411,8 +1411,19 @@ function openMonthModal(month) {
     return (nd >= mStart && nd <= mEnd) || recurringAppearsInMonth(t, thisYear, month);
   });
   document.getElementById('monthModalTitle').textContent = '🗓️ משימות ל' + MONTHS_HE[month] + ' ' + thisYear;
+  var mNum = String(month + 1).padStart(2,'0');
   var body = document.getElementById('monthModalBody');
-  body.innerHTML = mTasks.length ? mTasks.map(function(t){ return taskHTML(t, today); }).join('') : '<div style="color:var(--text3);text-align:center;padding:20px">אין משימות</div>';
+  // For recurring monthly tasks, override deadline to show the correct month
+  var displayTasks = mTasks.map(function(t) {
+    if (t.recurring && t.recurType === 'monthly' && t.recurMonthDays && t.recurMonthDays.length) {
+      var day = String(t.recurMonthDays[0]).padStart(2,'0');
+      var clone = JSON.parse(JSON.stringify(t));
+      clone.deadline = thisYear + '-' + mNum + '-' + day;
+      return clone;
+    }
+    return t;
+  });
+  body.innerHTML = displayTasks.length ? displayTasks.map(function(t){ return taskHTML(t, today); }).join('') : '<div style="color:var(--text3);text-align:center;padding:20px">אין משימות</div>';
   document.getElementById('monthModal').classList.add('on');
 }
 function closeMonthModal() {
