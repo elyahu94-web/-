@@ -1,13 +1,21 @@
-const CACHE = 'tasks-pwa-v21';
+const CACHE = 'tasks-pwa-v22';
 const ASSETS = [
-  '/',
-  '/index.html',
+  './index.html',
   'https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap'
 ];
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE).then(c =>
+      // addAll fails if ANY asset fails — use individual puts instead
+      Promise.allSettled(
+        ASSETS.map(url =>
+          fetch(url).then(res => {
+            if (res && res.status === 200) return c.put(url, res);
+          }).catch(() => {})
+        )
+      )
+    ).then(() => self.skipWaiting())
   );
 });
 
@@ -21,7 +29,6 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-
   // Apps Script API — network only (no caching)
   if (url.hostname === 'script.google.com') {
     e.respondWith(fetch(e.request).catch(() =>
@@ -31,7 +38,6 @@ self.addEventListener('fetch', e => {
     ));
     return;
   }
-
   // App shell — cache first, then network
   e.respondWith(
     caches.match(e.request).then(cached => {
@@ -42,7 +48,7 @@ self.addEventListener('fetch', e => {
           caches.open(CACHE).then(c => c.put(e.request, clone));
         }
         return res;
-      }).catch(() => caches.match('/index.html'));
+      }).catch(() => caches.match('./index.html'));
     })
   );
 });
@@ -55,6 +61,5 @@ self.addEventListener('sync', e => {
 });
 
 async function syncTasks() {
-  // Handled by the app itself on reconnect
   console.log('Background sync triggered');
 }
