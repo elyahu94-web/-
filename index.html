@@ -1466,40 +1466,78 @@ function formatWeekLabel(weekStart, todayWeekStart) {
   return months[d.getMonth()] + ' ' + d.getFullYear();
 }
 
+// ===== CHECK IF RECURRING TASK REPEATS IN A GIVEN MONTH =====
+function recurringAppearsInMonth(t, year, month) {
+  // month = 0-based
+  if (!t.recurring) return false;
+  if (t.recurType === 'monthly') {
+    // Has specific days in month → appears every month
+    return t.recurMonthDays && t.recurMonthDays.length > 0;
+  } else {
+    // Weekly → appears every week → appears in every month
+    return t.recurDays && t.recurDays.length > 0;
+  }
+}
+
+function recurringAppearsInWeek(t) {
+  if (!t.recurring) return false;
+  // weekly recurs → appears next week too
+  if (t.recurType !== 'monthly' && t.recurDays && t.recurDays.length) return true;
+  return false;
+}
+
+function recurringLabel(t) {
+  if (t.recurType === 'monthly') {
+    var days = (t.recurMonthDays || []).slice().sort(function(a,b){return a-b;});
+    return '🔁 כל חודש (' + days.join(',') + ')';
+  }
+  var dn = ['א'','ב'','ג'','ד'','ה'','ו'','ש''];
+  var days = (t.recurDays || []).map(function(d){ return dn[d]; });
+  return '🔁 כל ' + days.join(',');
+}
+
 // ===== SUMMARY BOXES =====
-function renderSummaryBoxes(open, today) {
+function renderSummaryBoxes(allTasks, today) {
   var MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
   var nowD = new Date(today);
-  var thisYear = nowD.getFullYear();
+  var thisYear  = nowD.getFullYear();
+  var thisMonth = nowD.getMonth(); // 0-based
   var todayWeekStart = getWeekStart(today);
   var nextWeekStart  = addDays(todayWeekStart, 7);
   var nextWeekEnd    = addDays(todayWeekStart, 13);
 
-  // Next week tasks
+  // All open non-done tasks including recurring
+  var open = allTasks.filter(function(t){ return !t.done; });
+
+  // ── Next week ──
   var nextWeekTasks = open.filter(function(t){
     var nd = normalizeDate(t.deadline);
-    return nd >= nextWeekStart && nd <= nextWeekEnd;
+    var byDeadline = nd >= nextWeekStart && nd <= nextWeekEnd;
+    var byRecur = recurringAppearsInWeek(t);
+    return byDeadline || byRecur;
   });
+  // dedupe
+  var seenNW = {};
+  nextWeekTasks = nextWeekTasks.filter(function(t){ if(seenNW[t.id]) return false; seenNW[t.id]=1; return true; });
 
-  // All months of current year from this month onward (excluding current month)
+  // ── Each future month of this year ──
   var monthGroups = [];
-  for (var m = nowD.getMonth() + 1; m < 12; m++) {
+  for (var m = thisMonth + 1; m < 12; m++) {
     var mStart = new Date(thisYear, m, 1).toISOString().split('T')[0];
     var mEnd   = new Date(thisYear, m+1, 0).toISOString().split('T')[0];
-    var mTasks = open.filter(function(t){
+    var seen = {};
+    var mTasks = [];
+
+    open.forEach(function(t) {
+      if (seen[t.id]) return;
       var nd = normalizeDate(t.deadline);
-      return nd >= mStart && nd <= mEnd;
+      // Has deadline in this month
+      if (nd >= mStart && nd <= mEnd) { seen[t.id]=1; mTasks.push(t); return; }
+      // Is recurring and appears in this month
+      if (recurringAppearsInMonth(t, thisYear, m)) { seen[t.id]=1; mTasks.push(t); }
     });
-    // Also include recurring tasks that have no deadline (will recur this month)
-    var recurTasks = open.filter(function(t){
-      if (!t.recurring || normalizeDate(t.deadline)) return false;
-      if (t.recurType === 'monthly' && t.recurMonthDays && t.recurMonthDays.length) return true;
-      return false;
-    });
-    var allTasks = mTasks.concat(recurTasks.filter(function(rt){
-      return !mTasks.find(function(mt){ return mt.id === rt.id; });
-    }));
-    if (allTasks.length) monthGroups.push({ name: MONTHS[m] + ' ' + thisYear, tasks: allTasks });
+
+    if (mTasks.length) monthGroups.push({ name: MONTHS[m] + ' ' + thisYear, month: m, tasks: mTasks });
   }
 
   var hasAnything = nextWeekTasks.length || monthGroups.length;
@@ -1507,13 +1545,13 @@ function renderSummaryBoxes(open, today) {
 
   function miniCard(t) {
     var nd = normalizeDate(t.deadline);
-    var dp = nd && nd > '1900-01-01' ? nd.split('-') : null;
-    var dateStr = dp ? dp[2]+'/'+dp[1] : (t.recurring ? '🔁' : '');
+    var dp = nd && nd > '1901-01-01' ? nd.split('-') : null;
+    var dateStr = dp ? dp[2]+'/'+dp[1] : (t.recurring ? recurringLabel(t) : '');
     var priColor = t.priority==='גבוהה' ? '#f87171' : t.priority==='נמוכה' ? '#34d399' : '#fbbf24';
     return '<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--surface3);border-radius:7px;margin-bottom:4px">' +
       '<div style="width:6px;height:6px;border-radius:50%;background:'+priColor+';flex-shrink:0"></div>' +
       '<span style="font-size:.75rem;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(t.title)+'</span>' +
-      '<span style="font-size:.68rem;color:var(--text3);flex-shrink:0">'+dateStr+'</span>' +
+      '<span style="font-size:.65rem;color:var(--text3);flex-shrink:0;max-width:90px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+dateStr+'</span>' +
     '</div>';
   }
 
@@ -1574,7 +1612,7 @@ function renderTasks() {
 
   // ── Tatzpit Kadima (summary forward) ──
   if (currentFilter === 'all' || currentFilter === 'open') {
-    html += renderSummaryBoxes(allOpen, today);
+    html += renderSummaryBoxes(allOpen, today); // allOpen already filtered to !done
   }
 
   // ── Tatzpit Achora (archive — tasks older than last week) ──
