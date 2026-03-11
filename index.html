@@ -1313,7 +1313,7 @@ function addTask() {
 
   tasks.unshift(task);
   localStorage.setItem('tasks_cache', JSON.stringify(tasks));
-  renderTasks(); updateStats(); refreshLists();
+  renderTasks(); updateStats(); refreshLists(); refreshOpenModal();
   resetAddForm();
 
   if (!isOnline) {
@@ -1369,7 +1369,7 @@ function confirmReopen() {
   closeReopen();
   if (!t) return;
   t.done = false;
-  renderTasks(); updateStats();
+  renderTasks(); updateStats(); refreshOpenModal();
   persist(function() { showToast('📂 משימה נפתחה מחדש'); });
 }
 
@@ -1388,7 +1388,7 @@ function confirmDone() {
     if (t.recurType === 'monthly') t.lastDoneMonth = today.substring(0, 7);
     else t.lastDoneWeek = getWeekStart(today);
   }
-  renderTasks(); updateStats();
+  renderTasks(); updateStats(); refreshOpenModal();
   persist(function() { showToast('🎉 משימה הושלמה!', var_green); });
 }
 
@@ -1424,14 +1424,26 @@ function openMonthModal(month) {
     return t;
   });
   body.innerHTML = displayTasks.length ? displayTasks.map(function(t){ return taskHTML(t, today); }).join('') : '<div style="color:var(--text3);text-align:center;padding:20px">אין משימות</div>';
+  _openModalType = 'month:' + month;
   document.getElementById('monthModal').classList.add('on');
 }
 function closeMonthModal() {
   document.getElementById('monthModal').classList.remove('on');
+  _openModalType = '';
+}
+
+// ===== REFRESH OPEN MODAL =====
+function refreshOpenModal() {
+  if (_openModalType === 'week') openWeekModal();
+  else if (_openModalType && _openModalType.indexOf('month:') === 0) {
+    var m = parseInt(_openModalType.split(':')[1]);
+    openMonthModal(m);
+  }
 }
 
 // ===== WEEK MODAL =====
 var _weekModalTasks = [];
+var _openModalType = ''; // 'week' | 'month:N'
 function openWeekModal() {
   var today = new Date().toISOString().split('T')[0];
   var nextWeekStart = addDays(getWeekStart(today), 7);
@@ -1444,10 +1456,12 @@ function openWeekModal() {
   var body = document.getElementById('weekModalBody');
   if (!nwt.length) { body.innerHTML = '<div style="color:var(--text3);text-align:center;padding:20px">אין משימות לשבוע הבא</div>'; }
   else { body.innerHTML = nwt.map(function(t){ return taskHTML(t, today); }).join(''); }
+  _openModalType = 'week';
   document.getElementById('weekModal').classList.add('on');
 }
 function closeWeekModal() {
   document.getElementById('weekModal').classList.remove('on');
+  _openModalType = '';
 }
 
 // ===== DELETE =====
@@ -1455,7 +1469,7 @@ function deleteTask(id) {
   var t = tasks.find(function(x) { return x.id === id; });
   if (!t || !confirm('למחוק "' + t.title + '"?')) return;
   tasks = tasks.filter(function(x) { return x.id !== id; });
-  renderTasks(); updateStats(); refreshLists();
+  renderTasks(); updateStats(); refreshLists(); refreshOpenModal();
   persist(function() { showToast('🗑️ נמחקה', var_red); });
 }
 
@@ -1537,7 +1551,7 @@ function saveEdit() {
     }
   }
   closeEdit();
-  renderTasks(); updateStats(); refreshLists();
+  renderTasks(); updateStats(); refreshLists(); refreshOpenModal();
   persist(function() { showToast('✅ נשמר'); });
 }
 
