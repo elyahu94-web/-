@@ -405,17 +405,21 @@ select.filter-sel {
 }
 .task-card:hover { transform: translateX(-2px); }
 .task-card.pri-high {
-  background: rgba(248,113,113,.10);
-  border-color: #f87171;
+  background: linear-gradient(135deg, rgba(220,38,38,.55) 0%, rgba(185,28,28,.4) 100%);
+  border-color: #ef4444;
+  border-width: 2px;
+  box-shadow: 0 0 0 1px rgba(239,68,68,.3), 0 4px 16px rgba(220,38,38,.3);
 }
-.task-card.pri-high::after { background: #f87171; }
-.task-card.pri-high:hover { background: rgba(248,113,113,.16); }
+.task-card.pri-high::after { background: #ef4444; width: 7px; }
+.task-card.pri-high:hover { background: linear-gradient(135deg, rgba(220,38,38,.7) 0%, rgba(185,28,28,.55) 100%); }
 .task-card.pri-mid {
-  background: rgba(251,191,36,.06);
-  border-color: rgba(251,191,36,.5);
+  background: linear-gradient(135deg, rgba(217,119,6,.45) 0%, rgba(180,83,9,.35) 100%);
+  border-color: #f59e0b;
+  border-width: 2px;
+  box-shadow: 0 0 0 1px rgba(245,158,11,.3), 0 4px 16px rgba(217,119,6,.25);
 }
-.task-card.pri-mid::after { background: var(--yellow); }
-.task-card.pri-mid:hover { background: rgba(251,191,36,.1); }
+.task-card.pri-mid::after { background: #f59e0b; width: 7px; }
+.task-card.pri-mid:hover { background: linear-gradient(135deg, rgba(217,119,6,.6) 0%, rgba(180,83,9,.5) 100%); }
 /* Per-card color accent via data-color */
 .task-card[data-color="blue"]   { border-color: rgba(79,142,247,.6); }
 .task-card[data-color="blue"]::after { background: var(--accent); }
