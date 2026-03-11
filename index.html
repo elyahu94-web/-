@@ -1578,11 +1578,12 @@ function renderSummaryBoxes(allTasks, today) {
   var nextWeekStart  = addDays(todayWeekStart, 7);
   var nextWeekEnd    = addDays(todayWeekStart, 13);
 
-  // All open non-done tasks including recurring
+  // For summary: open tasks + recurring tasks (even if done — they will reappear)
   var open = allTasks.filter(function(t){ return !t.done; });
+  var allForSummary = allTasks.filter(function(t){ return !t.done || t.recurring; });
 
   // ── Next week ──
-  var nextWeekTasks = open.filter(function(t){
+  var nextWeekTasks = allForSummary.filter(function(t){
     var nd = normalizeDate(t.deadline);
     var byDeadline = nd >= nextWeekStart && nd <= nextWeekEnd;
     var byRecur = recurringAppearsInWeek(t);
@@ -1600,7 +1601,7 @@ function renderSummaryBoxes(allTasks, today) {
     var seen = {};
     var mTasks = [];
 
-    open.forEach(function(t) {
+    allForSummary.forEach(function(t) {
       if (seen[t.id]) return;
       var nd = normalizeDate(t.deadline);
       // Has deadline in this month
