@@ -1836,7 +1836,8 @@ function taskHTML(t, today) {
     else dateBadge = '<span class="badge b-date" style="font-size:.75rem;padding:3px 9px">🎯 יעד: ' + dateStr + ' — ' + dayName + '</span>';
   }
 
-  var timeBadge = t.time ? '<span class="badge b-time">🕐 ' + esc(t.time) + '</span>' : '';
+  var cleanTime = t.time && /^\d{1,2}:\d{2}$/.test(String(t.time).trim()) ? t.time : '';
+  var timeBadge = cleanTime ? '<span class="badge b-time">🕐 ' + esc(cleanTime) + '</span>' : '';
   var projBadge = t.project ? '<span class="badge b-proj">📁 ' + esc(t.project) + '</span>' : '';
   var assignBadge = t.assign ? '<span class="badge b-assign">👤 ' + esc(t.assign) + '</span>' : '';
 
