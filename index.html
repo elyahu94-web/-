@@ -1859,8 +1859,10 @@ function taskHTML(t, today) {
     try {
       var cd2 = new Date(t.createdAt);
       if (!isNaN(cd2.getTime())) {
+        var cDayNames = ['יום ראשון','יום שני','יום שלישי','יום רביעי','יום חמישי','יום שישי','שבת'];
         createdRowStr = cd2.getDate() + '/' + (cd2.getMonth()+1) + '/' + cd2.getFullYear() +
-          ' ' + String(cd2.getHours()).padStart(2,'0') + ':' + String(cd2.getMinutes()).padStart(2,'0');
+          ' ' + String(cd2.getHours()).padStart(2,'0') + ':' + String(cd2.getMinutes()).padStart(2,'0') +
+          ' — ' + cDayNames[cd2.getDay()];
       }
     } catch(e) {}
   }
