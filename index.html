@@ -1710,9 +1710,9 @@ function renderSummaryBoxes(allTasks, today) {
 
   if (nextWeekTasks.length) {
     html += '<div class="summary-box summary-week" onclick="openWeekModal()" style="cursor:pointer" title="לחץ לפתיחה">' +
-      '<div class="summary-box-hdr">📅 משימות לשבוע הבא <span class="summary-count">'+nextWeekTasks.length+'</span><span style="font-size:.7rem;opacity:.6;margin-right:4px">↗</span></div>' +
+      '<div class="summary-box-hdr">📅 משימות לשבוע הבא <span class="summary-count">'+nextWeekTasks.length+'</span></div>' +
       nextWeekTasks.slice(0,3).map(miniCard).join('') +
-      (nextWeekTasks.length > 3 ? '<div style="text-align:center;font-size:.75rem;color:#22d3ee;padding:6px 0;font-weight:700;cursor:pointer">📋 קיימות עוד '+(nextWeekTasks.length-3)+' משימות — לחץ לצפייה</div>' : '') +
+      '<div style="text-align:center;font-size:.75rem;color:#22d3ee;padding:6px 0;font-weight:700">👆 לחץ לצפייה בכל המשימות</div>' +
     '</div>';
   }
 
