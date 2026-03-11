@@ -1737,24 +1737,19 @@ function renderSummaryBoxes(allTasks, today) {
   nextWeekTasks = nextWeekTasks.filter(function(t){ if(seenNW[t.id]) return false; seenNW[t.id]=1; return true; });
 
   // ── Each future month of this year ──
+  // Only current month
   var monthGroups = [];
-  for (var m = thisMonth + 1; m < 12; m++) {
-    var mStart = new Date(thisYear, m, 1).toISOString().split('T')[0];
-    var mEnd   = new Date(thisYear, m+1, 0).toISOString().split('T')[0];
-    var seen = {};
-    var mTasks = [];
-
-    allForSummary.forEach(function(t) {
-      if (seen[t.id]) return;
-      var nd = normalizeDate(t.deadline);
-      // Has deadline in this month
-      if (nd >= mStart && nd <= mEnd) { seen[t.id]=1; mTasks.push(t); return; }
-      // Is recurring and appears in this month
-      if (recurringAppearsInMonth(t, thisYear, m)) { seen[t.id]=1; mTasks.push(t); }
-    });
-
-    if (mTasks.length) monthGroups.push({ name: MONTHS[m] + ' ' + thisYear, month: m, tasks: mTasks });
-  }
+  var mStart = new Date(thisYear, thisMonth, 1).toISOString().split('T')[0];
+  var mEnd   = new Date(thisYear, thisMonth+1, 0).toISOString().split('T')[0];
+  var seen = {};
+  var mTasks = [];
+  allForSummary.forEach(function(t) {
+    if (seen[t.id]) return;
+    var nd = normalizeDate(t.deadline);
+    if (nd >= mStart && nd <= mEnd) { seen[t.id]=1; mTasks.push(t); return; }
+    if (recurringAppearsInMonth(t, thisYear, thisMonth)) { seen[t.id]=1; mTasks.push(t); }
+  });
+  if (mTasks.length) monthGroups.push({ name: MONTHS[thisMonth] + ' ' + thisYear, month: thisMonth, tasks: mTasks });
 
   var hasAnything = nextWeekTasks.length || monthGroups.length;
   if (!hasAnything) return '';
