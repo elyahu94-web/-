@@ -593,12 +593,13 @@ select.filter-sel {
 /* WEEK GROUPS */
 .weeks-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 2fr 1fr;
   gap: 12px;
   margin-bottom: 12px;
   align-items: start;
 }
-@media (max-width: 700px) { .weeks-grid { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .weeks-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .weeks-grid { grid-template-columns: 1fr; } }
 .week-group { margin-bottom: 0; }
 .week-group-hdr {
   display: flex;
@@ -611,6 +612,9 @@ select.filter-sel {
   border-right: 3px solid var(--border2);
 }
 .week-group-hdr.this-week { border-right-color: var(--accent); background: rgba(79,142,247,.08); }
+.week-group-hdr.next-week { border-right-color: #22d3ee; background: rgba(34,211,238,.08); }
+.week-group-hdr.next-week .week-group-label { color: #22d3ee; }
+.week-group-hdr.next-week .week-group-date-range { color: rgba(34,211,238,.7); }
 .week-group-label { font-size: .95rem; font-weight: 900; color: var(--text1); letter-spacing: .2px; }
 .week-group-date-range { font-size: .65rem; color: var(--text3); font-weight: 500; flex: 1; padding: 0 6px; }
 .week-group-hdr.this-week .week-group-date-range { color: rgba(79,142,247,.7); }
@@ -1863,30 +1867,58 @@ function renderTasks() {
     return ws[2]+'/'+ws[1] + ' — ' + wes[2]+'/'+wes[1];
   }
 
-  if (thisWeekTasks.length || lastWeekTasks.length) {
+  // Next week tasks for inline column
+  var nextWeekStartStr = addDays(todayWeekStart, 7);
+  var nextWeekEndStr   = addDays(nextWeekStartStr, 6);
+  var allForNextWeek = filtered.filter(function(t){ return !t.done || (t.done && t.recurring); });
+  var nextWeekColTasks = allForNextWeek.filter(function(t){
+    var nd = normalizeDate(t.deadline);
+    return (nd >= nextWeekStartStr && nd <= nextWeekEndStr) || recurringAppearsInWeek(t);
+  });
+  var seenNWC = {}; nextWeekColTasks = nextWeekColTasks.filter(function(t){ if(seenNWC[t.id]) return false; seenNWC[t.id]=1; return true; });
+
+  if (lastWeekTasks.length || thisWeekTasks.length || nextWeekColTasks.length) {
     html += '<div class="weeks-grid">';
 
-    if (thisWeekTasks.length) {
-      html += '<div class="week-group">' +
-        '<div class="week-group-hdr this-week">' +
-          '<span class="week-group-label">משימות שנוצרו השבוע</span>' +
-          '<span class="week-group-date-range">' + weekDateRange(todayWeekStart) + '</span>' +
-          '<span class="week-group-count">' + thisWeekTasks.length + '</span>' +
-        '</div>';
-      thisWeekTasks.forEach(function(t) { html += taskHTML(t, today); });
-      html += '</div>';
-    }
-
+    // Col 1: last week (right)
+    html += '<div class="week-group">';
     if (lastWeekTasks.length) {
-      html += '<div class="week-group">' +
-        '<div class="week-group-hdr">' +
-          '<span class="week-group-label">משימות שנוצרו שבוע שעבר</span>' +
-          '<span class="week-group-date-range">' + weekDateRange(lastWeekStart) + '</span>' +
-          '<span class="week-group-count">' + lastWeekTasks.length + '</span>' +
-        '</div>';
+      html += '<div class="week-group-hdr">' +
+        '<span class="week-group-label">שבוע שעבר</span>' +
+        '<span class="week-group-date-range">' + weekDateRange(lastWeekStart) + '</span>' +
+        '<span class="week-group-count">' + lastWeekTasks.length + '</span>' +
+      '</div>';
       lastWeekTasks.forEach(function(t) { html += taskHTML(t, today); });
-      html += '</div>';
     }
+    html += '</div>';
+
+    // Col 2: this week (middle)
+    html += '<div class="week-group">';
+    if (thisWeekTasks.length) {
+      html += '<div class="week-group-hdr this-week">' +
+        '<span class="week-group-label">השבוע</span>' +
+        '<span class="week-group-date-range">' + weekDateRange(todayWeekStart) + '</span>' +
+        '<span class="week-group-count">' + thisWeekTasks.length + '</span>' +
+      '</div>';
+      thisWeekTasks.forEach(function(t) { html += taskHTML(t, today); });
+    }
+    html += '</div>';
+
+    // Col 3: next week (left)
+    html += '<div class="week-group" onclick="openWeekModal()" style="cursor:pointer">';
+    html += '<div class="week-group-hdr next-week">' +
+      '<span class="week-group-label">שבוע הבא</span>' +
+      '<span class="week-group-date-range">' + weekDateRange(nextWeekStartStr) + '</span>' +
+      '<span class="week-group-count">' + nextWeekColTasks.length + '</span>' +
+    '</div>';
+    if (nextWeekColTasks.length) {
+      nextWeekColTasks.slice(0,3).forEach(function(t) { html += taskHTML(t, today); });
+      if (nextWeekColTasks.length > 3) html += '<div style="text-align:center;font-size:.75rem;color:#22d3ee;padding:6px 0;font-weight:700">👆 לחץ לצפייה בכל המשימות</div>';
+      else html += '<div style="text-align:center;font-size:.75rem;color:#22d3ee;padding:6px 0;font-weight:700">👆 לחץ לצפייה</div>';
+    } else {
+      html += '<div style="color:var(--text3);font-size:.8rem;padding:8px;text-align:center">אין משימות לשבוע הבא</div>';
+    }
+    html += '</div>';
 
     html += '</div>';
   }
