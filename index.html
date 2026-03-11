@@ -1618,7 +1618,6 @@ function renderSummaryBoxes(allTasks, today) {
   function miniCard(t) {
     var dateStr = '';
     if (t.recurring && t.recurType !== 'monthly' && t.recurDays && t.recurDays.length) {
-      // Weekly recurring — always find next occurrence in next week
       for (var di = 0; di < 7; di++) {
         var checkD = new Date(nextWeekStart);
         checkD.setDate(checkD.getDate() + di);
@@ -1634,10 +1633,10 @@ function renderSummaryBoxes(allTasks, today) {
       if (dp) dateStr = dp[2]+'/'+dp[1];
     }
     var priColor = t.priority==='גבוהה' ? '#f87171' : t.priority==='נמוכה' ? '#34d399' : '#fbbf24';
-    return '<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--surface3);border-radius:7px;margin-bottom:4px">' +
-      '<div style="width:6px;height:6px;border-radius:50%;background:'+priColor+';flex-shrink:0"></div>' +
-      '<span style="font-size:.75rem;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(t.title)+'</span>' +
-      '<span style="font-size:.65rem;color:var(--text3);flex-shrink:0;max-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+dateStr+'</span>' +
+    return '<div onclick="openEdit('+t.id+')" style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.25);border-radius:8px;margin-bottom:5px;cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(34,211,238,.22)'" onmouseout="this.style.background='rgba(34,211,238,.12)'">' +
+      '<div style="width:7px;height:7px;border-radius:50%;background:'+priColor+';flex-shrink:0"></div>' +
+      '<span style="font-size:.78rem;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e0f9ff" title="'+esc(t.title)+(t.desc?' — '+esc(t.desc):'')+'">' + esc(t.title) + '</span>' +
+      '<span style="font-size:.65rem;color:#67e8f9;flex-shrink:0;white-space:nowrap">'+dateStr+'</span>' +
     '</div>';
   }
 
@@ -1656,7 +1655,6 @@ function renderSummaryBoxes(allTasks, today) {
     function miniCardForMonth(t) {
       var dateStr = '';
       if (t.recurring && t.recurType === 'monthly' && t.recurMonthDays && t.recurMonthDays.length) {
-        // Always show the date within the displayed month
         var mNum = String(mg.month + 1).padStart(2,'0');
         dateStr = t.recurMonthDays.slice().sort(function(a,b){return a-b;})
           .map(function(d){ return String(d).padStart(2,'0')+'/'+mNum; }).join(', ');
@@ -1666,10 +1664,10 @@ function renderSummaryBoxes(allTasks, today) {
         if (dp) dateStr = dp[2]+'/'+dp[1];
       }
       var priColor = t.priority==='גבוהה' ? '#f87171' : t.priority==='נמוכה' ? '#34d399' : '#fbbf24';
-      return '<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--surface3);border-radius:7px;margin-bottom:4px">' +
-        '<div style="width:6px;height:6px;border-radius:50%;background:'+priColor+';flex-shrink:0"></div>' +
-        '<span style="font-size:.75rem;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(t.title)+'</span>' +
-        '<span style="font-size:.65rem;color:var(--text3);flex-shrink:0;max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+dateStr+'</span>' +
+      return '<div onclick="openEdit('+t.id+')" style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.28);border-radius:8px;margin-bottom:5px;cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(167,139,250,.22)'" onmouseout="this.style.background='rgba(167,139,250,.12)'">' +
+        '<div style="width:7px;height:7px;border-radius:50%;background:'+priColor+';flex-shrink:0"></div>' +
+        '<span style="font-size:.78rem;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#ede9fe" title="'+esc(t.title)+(t.desc?' — '+esc(t.desc):'')+'">' + esc(t.title) + '</span>' +
+        '<span style="font-size:.65rem;color:#c4b5fd;flex-shrink:0;white-space:nowrap">'+dateStr+'</span>' +
       '</div>';
     }
     html += '<div class="summary-box summary-month">' +
