@@ -621,6 +621,10 @@ select.filter-sel {
 }
 .week-group-hdr.this-week { border-right-color: var(--accent); background: rgba(79,142,247,.08); }
 .week-group-label { font-size: .75rem; font-weight: 800; color: var(--text2); }
+.week-group-date-range { font-size: .65rem; color: var(--text3); font-weight: 500; flex: 1; padding: 0 6px; }
+.week-group-hdr.this-week .week-group-date-range { color: rgba(79,142,247,.7); }
+.week-group-date-range { font-size: .65rem; color: var(--text3); font-weight: 500; flex: 1; padding: 0 6px; }
+.week-group-hdr.this-week .week-group-date-range { color: rgba(79,142,247,.7); }
 .week-group-hdr.this-week .week-group-label { color: var(--accent); }
 .week-group-count { font-size: .68rem; color: var(--text3); font-weight: 600; }
 
@@ -1447,11 +1451,16 @@ function getFiltered() {
 function normalizeDate(dl) {
   if (!dl) return '';
   var s = String(dl).trim();
-  // Reject Google Sheets epoch garbage (1899-12-30)
-  if (s.startsWith('1899') || s.startsWith('1900-01-00')) return '';
+  // Reject Google Sheets epoch garbage (any pre-1970 ISO datetime with T)
+  if (s.indexOf('T') >= 0) {
+    var dateOnly = s.substring(0, 10);
+    return dateOnly < '1970-01-01' ? '' : dateOnly;
+  }
+  // Reject old epoch dates
+  if (s < '1901-01-01' && /^\d{4}/.test(s)) return '';
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
     var r = s.substring(0,10);
-    return r < '1901-01-01' ? '' : r; // reject any pre-1901 date
+    return r < '1901-01-01' ? '' : r;
   }
   if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) {
     var p = s.split('/');
@@ -1621,7 +1630,7 @@ function renderSummaryBoxes(allTasks, today) {
 
   if (nextWeekTasks.length) {
     html += '<div class="summary-box summary-week">' +
-      '<div class="summary-box-hdr">📅 שבוע הבא <span class="summary-count">'+nextWeekTasks.length+'</span></div>' +
+      '<div class="summary-box-hdr">📅 משימות לשבוע הבא <span class="summary-count">'+nextWeekTasks.length+'</span></div>' +
       nextWeekTasks.map(miniCard).join('') +
     '</div>';
   }
@@ -1647,7 +1656,7 @@ function renderSummaryBoxes(allTasks, today) {
       '</div>';
     }
     html += '<div class="summary-box summary-month">' +
-      '<div class="summary-box-hdr">🗓️ '+mg.name+' <span class="summary-count">'+mg.tasks.length+'</span></div>' +
+      '<div class="summary-box-hdr">🗓️ משימות ל'+mg.name+' <span class="summary-count">'+mg.tasks.length+'</span></div>' +
       mg.tasks.map(miniCardForMonth).join('') +
     '</div>';
   });
@@ -1700,6 +1709,12 @@ function renderTasks() {
   }
 
   // ── This week + Last week side by side ──
+  function weekDateRange(weekStart) {
+    var we = addDays(weekStart, 6);
+    var ws = weekStart.split('-'), wes = we.split('-');
+    return ws[2]+'/'+ws[1] + ' — ' + wes[2]+'/'+wes[1];
+  }
+
   if (thisWeekTasks.length || lastWeekTasks.length) {
     html += '<div class="weeks-grid">';
 
@@ -1707,6 +1722,7 @@ function renderTasks() {
       html += '<div class="week-group">' +
         '<div class="week-group-hdr this-week">' +
           '<span class="week-group-label">השבוע</span>' +
+          '<span class="week-group-date-range">' + weekDateRange(todayWeekStart) + '</span>' +
           '<span class="week-group-count">' + thisWeekTasks.length + '</span>' +
         '</div>';
       thisWeekTasks.forEach(function(t) { html += taskHTML(t, today); });
@@ -1717,6 +1733,7 @@ function renderTasks() {
       html += '<div class="week-group">' +
         '<div class="week-group-hdr">' +
           '<span class="week-group-label">שבוע שעבר</span>' +
+          '<span class="week-group-date-range">' + weekDateRange(lastWeekStart) + '</span>' +
           '<span class="week-group-count">' + lastWeekTasks.length + '</span>' +
         '</div>';
       lastWeekTasks.forEach(function(t) { html += taskHTML(t, today); });
@@ -1811,9 +1828,12 @@ function taskHTML(t, today) {
   if (nd && nd > '1900-01-01') {
     var dp = nd.split('-');
     var dateStr = dp[2]+'/'+dp[1]+'/'+dp[0];
-    if (nd < today) dateBadge = '<span class="badge b-overdue" style="font-size:.75rem;padding:3px 9px">⚠️ באיחור: ' + dateStr + '</span>';
-    else if (nd === today) dateBadge = '<span class="badge b-today" style="font-size:.75rem;padding:3px 9px">📅 היום: ' + dateStr + '</span>';
-    else dateBadge = '<span class="badge b-date" style="font-size:.75rem;padding:3px 9px">🎯 יעד: ' + dateStr + '</span>';
+    var dayNames = ['יום ראשון','יום שני','יום שלישי','יום רביעי','יום חמישי','יום שישי','שבת'];
+    var dayName = dayNames[new Date(nd).getDay()];
+    var dateWithDay = dayName + ' ' + dateStr;
+    if (nd < today) dateBadge = '<span class="badge b-overdue" style="font-size:.75rem;padding:3px 9px">⚠️ באיחור: ' + dateStr + ' — ' + dayName + '</span>';
+    else if (nd === today) dateBadge = '<span class="badge b-today" style="font-size:.75rem;padding:3px 9px">📅 היום: ' + dateStr + ' — ' + dayName + '</span>';
+    else dateBadge = '<span class="badge b-date" style="font-size:.75rem;padding:3px 9px">🎯 יעד: ' + dateStr + ' — ' + dayName + '</span>';
   }
 
   var timeBadge = t.time ? '<span class="badge b-time">🕐 ' + esc(t.time) + '</span>' : '';
