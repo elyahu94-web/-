@@ -567,8 +567,8 @@ select.filter-sel {
   padding: 12px;
   min-width: 0;
 }
-.summary-box.summary-week  { background: rgba(34,211,238,.10); border-color: rgba(34,211,238,.5); }
-.summary-box.summary-month { background: rgba(34,211,238,.07); border-color: rgba(34,211,238,.35); }
+.summary-box.summary-week  { background: rgba(34,211,238,.22); border-color: rgba(34,211,238,.7); }
+.summary-box.summary-month { background: rgba(139,92,246,.15); border-color: rgba(139,92,246,.45); }
 .summary-box-hdr {
   display: flex;
   align-items: center;
@@ -580,14 +580,14 @@ select.filter-sel {
   letter-spacing: .2px;
 }
 .summary-week  .summary-box-hdr { color: #22d3ee; }
-.summary-month .summary-box-hdr { color: #67e8f9; }
+.summary-month .summary-box-hdr { color: #c4b5fd; }
 .summary-count {
-  background: rgba(34,211,238,.2);
+  background: rgba(255,255,255,.12);
   border-radius: 20px;
   padding: 2px 9px;
   font-size: .72rem;
   font-weight: 800;
-  color: #22d3ee;
+  color: inherit;
 }
 
 /* WEEK GROUPS */
@@ -1016,6 +1016,26 @@ select.filter-sel {
 
 <div id="toast"></div>
 
+<div class="overlay" id="monthModal" onclick="if(event.target===this)closeMonthModal()">
+  <div class="modal" style="max-width:520px;width:95%;max-height:80vh;overflow-y:auto;padding:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div id="monthModalTitle" style="font-size:1.1rem;font-weight:900;color:#c4b5fd"></div>
+      <button onclick="closeMonthModal()" style="background:none;border:none;color:var(--text3);font-size:1.4rem;cursor:pointer;line-height:1">✕</button>
+    </div>
+    <div id="monthModalBody"></div>
+  </div>
+</div>
+
+<div class="overlay" id="weekModal" onclick="if(event.target===this)closeWeekModal()">
+  <div class="modal" style="max-width:520px;width:95%;max-height:80vh;overflow-y:auto;padding:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-size:1.1rem;font-weight:900;color:#22d3ee">📅 משימות לשבוע הבא</div>
+      <button onclick="closeWeekModal()" style="background:none;border:none;color:var(--text3);font-size:1.4rem;cursor:pointer;line-height:1">✕</button>
+    </div>
+    <div id="weekModalBody"></div>
+  </div>
+</div>
+
 <div class="overlay" id="reopenModal">
   <div class="modal" style="max-width:360px">
     <div class="confirm-icon">📂</div>
@@ -1334,6 +1354,49 @@ function closeConfirm() {
   _pendingId = null;
 }
 
+// ===== MONTH MODAL =====
+var MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+function openMonthModal(month) {
+  event.stopPropagation();
+  var today = new Date().toISOString().split('T')[0];
+  var thisYear = new Date(today).getFullYear();
+  var mStart = new Date(thisYear, month, 1).toISOString().split('T')[0];
+  var mEnd   = new Date(thisYear, month+1, 0).toISOString().split('T')[0];
+  var allForSummary = tasks.filter(function(t){ return !t.done || t.recurring; });
+  var mTasks = allForSummary.filter(function(t){
+    var nd = normalizeDate(t.deadline);
+    return (nd >= mStart && nd <= mEnd) || recurringAppearsInMonth(t, thisYear, month);
+  });
+  document.getElementById('monthModalTitle').textContent = '🗓️ משימות ל' + MONTHS_HE[month] + ' ' + thisYear;
+  var body = document.getElementById('monthModalBody');
+  body.innerHTML = mTasks.length ? mTasks.map(function(t){ return taskCard(t, today); }).join('') : '<div style="color:var(--text3);text-align:center;padding:20px">אין משימות</div>';
+  document.getElementById('monthModal').classList.add('on');
+}
+function closeMonthModal() {
+  document.getElementById('monthModal').classList.remove('on');
+}
+
+// ===== WEEK MODAL =====
+var _weekModalTasks = [];
+function openWeekModal() {
+  var today = new Date().toISOString().split('T')[0];
+  var nowD = new Date(today);
+  var nextWeekStart = addDays(getWeekStart(today), 7);
+  var nextWeekEnd   = addDays(nextWeekStart, 6);
+  var allForSummary = tasks.filter(function(t){ return !t.done || t.recurring; });
+  var nwt = allForSummary.filter(function(t){
+    var nd = normalizeDate(t.deadline);
+    return (nd >= nextWeekStart && nd <= nextWeekEnd) || recurringAppearsInWeek(t);
+  });
+  var body = document.getElementById('weekModalBody');
+  if (!nwt.length) { body.innerHTML = '<div style="color:var(--text3);text-align:center;padding:20px">אין משימות לשבוע הבא</div>'; }
+  else { body.innerHTML = nwt.map(function(t){ return taskCard(t, today); }).join(''); }
+  document.getElementById('weekModal').classList.add('on');
+}
+function closeWeekModal() {
+  document.getElementById('weekModal').classList.remove('on');
+}
+
 // ===== DELETE =====
 function deleteTask(id) {
   var t = tasks.find(function(x) { return x.id === id; });
@@ -1646,9 +1709,10 @@ function renderSummaryBoxes(allTasks, today) {
   html += '<div class="summary-boxes">';
 
   if (nextWeekTasks.length) {
-    html += '<div class="summary-box summary-week">' +
-      '<div class="summary-box-hdr">📅 משימות לשבוע הבא <span class="summary-count">'+nextWeekTasks.length+'</span></div>' +
-      nextWeekTasks.map(miniCard).join('') +
+    html += '<div class="summary-box summary-week" onclick="openWeekModal()" style="cursor:pointer" title="לחץ לפתיחה">' +
+      '<div class="summary-box-hdr">📅 משימות לשבוע הבא <span class="summary-count">'+nextWeekTasks.length+'</span><span style="font-size:.7rem;opacity:.6;margin-right:4px">↗</span></div>' +
+      nextWeekTasks.slice(0,3).map(miniCard).join('') +
+      (nextWeekTasks.length > 3 ? '<div style="text-align:center;font-size:.75rem;color:#22d3ee;padding:6px 0;font-weight:700;cursor:pointer">📋 קיימות עוד '+(nextWeekTasks.length-3)+' משימות — לחץ לצפייה</div>' : '') +
     '</div>';
   }
 
@@ -1671,9 +1735,10 @@ function renderSummaryBoxes(allTasks, today) {
         '<span style="font-size:.65rem;color:#c4b5fd;flex-shrink:0;white-space:nowrap">'+dateStr+'</span>' +
       '</div>';
     }
-    html += '<div class="summary-box summary-month">' +
+    html += '<div class="summary-box summary-month" onclick="openMonthModal('+mg.month+')" style="cursor:pointer">' +
       '<div class="summary-box-hdr">🗓️ משימות ל'+mg.name+' <span class="summary-count">'+mg.tasks.length+'</span></div>' +
-      mg.tasks.map(miniCardForMonth).join('') +
+      mg.tasks.slice(0,3).map(miniCardForMonth).join('') +
+      (mg.tasks.length > 3 ? '<div style="text-align:center;font-size:.75rem;color:#c4b5fd;padding:6px 0;font-weight:700">📋 קיימות עוד '+(mg.tasks.length-3)+' משימות — לחץ לצפייה</div>' : '') +
     '</div>';
   });
 
