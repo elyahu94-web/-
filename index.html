@@ -1495,7 +1495,7 @@ function recurringLabel(t) {
     var days = (t.recurMonthDays || []).slice().sort(function(a,b){return a-b;});
     return '🔁 כל חודש (' + days.join(',') + ')';
   }
-  var dn = ['א'','ב'','ג'','ד'','ה'','ו'','ש''];
+  var dn = ["\u05D0'","\u05D1'","\u05D2'","\u05D3'","\u05D4'","\u05D5'","\u05E9'"];
   var days = (t.recurDays || []).map(function(d){ return dn[d]; });
   return '🔁 כל ' + days.join(',');
 }
