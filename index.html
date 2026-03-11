@@ -1130,6 +1130,43 @@ function dismissInstall() {
   localStorage.setItem('installDismissed', '1');
 }
 
+// ===== RECURRING RESET =====
+function checkRecurringReset() {
+  var today = new Date().toISOString().split('T')[0];
+  var thisWeekStart = getWeekStart(today);
+  var changed = false;
+
+  tasks.forEach(function(t) {
+    if (!t.recurring || !t.done) return;
+
+    if (t.recurType !== 'monthly' && t.recurDays && t.recurDays.length) {
+      // Weekly — reset if last done was in a previous week
+      var lastDoneWeek = t.lastDoneWeek || '';
+      if (lastDoneWeek !== thisWeekStart) {
+        t.done = false;
+        t.lastDoneWeek = '';
+        changed = true;
+      }
+    }
+
+    if (t.recurType === 'monthly' && t.recurMonthDays && t.recurMonthDays.length) {
+      // Monthly — reset if last done was in a previous month
+      var thisMonth = today.substring(0, 7); // yyyy-MM
+      var lastDoneMonth = t.lastDoneMonth || '';
+      if (lastDoneMonth !== thisMonth) {
+        t.done = false;
+        t.lastDoneMonth = '';
+        changed = true;
+      }
+    }
+  });
+
+  if (changed) {
+    renderTasks(); updateStats();
+    persist(function() {});
+  }
+}
+
 // ===== INIT =====
 function init() {
   setTimeout(function() {
@@ -1157,6 +1194,7 @@ function init() {
   }
 
   loadTasks();
+  checkRecurringReset();
 }
 
 // ===== LOAD =====
@@ -1345,6 +1383,11 @@ function confirmDone() {
   closeConfirm();
   if (!t) return;
   t.done = true;
+  if (t.recurring) {
+    var today = new Date().toISOString().split('T')[0];
+    if (t.recurType === 'monthly') t.lastDoneMonth = today.substring(0, 7);
+    else t.lastDoneWeek = getWeekStart(today);
+  }
   renderTasks(); updateStats();
   persist(function() { showToast('🎉 משימה הושלמה!', var_green); });
 }
@@ -1362,7 +1405,7 @@ function openMonthModal(month) {
   var thisYear = new Date(today).getFullYear();
   var mStart = new Date(thisYear, month, 1).toISOString().split('T')[0];
   var mEnd   = new Date(thisYear, month+1, 0).toISOString().split('T')[0];
-  var allForSummary = tasks.filter(function(t){ return !t.done || t.recurring; });
+  var allForSummary = tasks.filter(function(t){ return !t.done || (t.done && t.recurring); });
   var mTasks = allForSummary.filter(function(t){
     var nd = normalizeDate(t.deadline);
     return (nd >= mStart && nd <= mEnd) || recurringAppearsInMonth(t, thisYear, month);
@@ -1382,7 +1425,7 @@ function openWeekModal() {
   var today = new Date().toISOString().split('T')[0];
   var nextWeekStart = addDays(getWeekStart(today), 7);
   var nextWeekEnd   = addDays(nextWeekStart, 6);
-  var allForSummary = tasks.filter(function(t){ return !t.done || t.recurring; });
+  var allForSummary = tasks.filter(function(t){ return !t.done || (t.done && t.recurring); });
   var nwt = allForSummary.filter(function(t){
     var nd = normalizeDate(t.deadline);
     return (nd >= nextWeekStart && nd <= nextWeekEnd) || recurringAppearsInWeek(t);
