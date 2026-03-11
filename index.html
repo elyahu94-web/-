@@ -514,6 +514,63 @@ select.filter-sel {
 .btn-del:hover { border-color: var(--red); color: var(--red); background: rgba(248,113,113,.08); }
 .btn-cal:hover { border-color: var(--green); color: var(--green); background: rgba(52,211,153,.08); }
 
+/* SUMMARY BOXES */
+.summary-boxes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.summary-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  min-width: 0;
+}
+.summary-box.summary-week  { border-color: rgba(79,142,247,.4); }
+.summary-box.summary-month { border-color: rgba(167,139,250,.4); }
+.summary-box-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: .75rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: var(--text2);
+}
+.summary-week  .summary-box-hdr { color: var(--accent); }
+.summary-month .summary-box-hdr { color: var(--purple); }
+.summary-count {
+  background: var(--surface2);
+  border-radius: 20px;
+  padding: 1px 8px;
+  font-size: .68rem;
+  font-weight: 700;
+  color: var(--text3);
+}
+
+/* WEEK GROUPS */
+.week-group { margin-bottom: 18px; }
+.week-group-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--surface2);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  border-right: 3px solid var(--border2);
+}
+.week-group-hdr.this-week { border-right-color: var(--accent); background: rgba(79,142,247,.08); }
+.week-group-label { font-size: .75rem; font-weight: 800; color: var(--text2); }
+.week-group-hdr.this-week .week-group-label { color: var(--accent); }
+.week-group-count { font-size: .68rem; color: var(--text3); font-weight: 600; }
+
+@media (max-width: 600px) {
+  .summary-boxes { grid-template-columns: 1fr; }
+}
+
 /* EMPTY */
 .empty { text-align: center; padding: 56px 20px; color: var(--text3); }
 .empty-icon { font-size: 3rem; margin-bottom: 12px; opacity: .5; }
@@ -1365,13 +1422,86 @@ function sortTasks(arr) {
   });
 }
 
+// ===== TIME GROUP HELPERS =====
+function getWeekStart(date) {
+  var d = new Date(date);
+  d.setDate(d.getDate() - d.getDay()); // Sunday
+  return d.toISOString().split('T')[0];
+}
+function addDays(dateStr, n) {
+  var d = new Date(dateStr); d.setDate(d.getDate() + n);
+  return d.toISOString().split('T')[0];
+}
+function formatWeekLabel(weekStart, todayWeekStart) {
+  if (weekStart === todayWeekStart) return 'השבוע';
+  if (weekStart === addDays(todayWeekStart, -7)) return 'שבוע שעבר';
+  if (weekStart === addDays(todayWeekStart, -14)) return 'לפני שבועיים';
+  if (weekStart === addDays(todayWeekStart, -21)) return 'לפני 3 שבועות';
+  // older — show month
+  var d = new Date(weekStart);
+  var months = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+  return months[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+// ===== SUMMARY BOXES =====
+function renderSummaryBoxes(open, today) {
+  var todayWeekStart = getWeekStart(today);
+  var nextWeekStart  = addDays(todayWeekStart, 7);
+  var nextWeekEnd    = addDays(todayWeekStart, 13);
+
+  // Next month range
+  var nowD = new Date(today);
+  var nextMonthStart = new Date(nowD.getFullYear(), nowD.getMonth()+1, 1).toISOString().split('T')[0];
+  var nextMonthEnd   = new Date(nowD.getFullYear(), nowD.getMonth()+2, 0).toISOString().split('T')[0];
+
+  var nextWeekTasks  = open.filter(function(t){ var nd=normalizeDate(t.deadline); return nd>=nextWeekStart && nd<=nextWeekEnd; });
+  var nextMonthTasks = open.filter(function(t){ var nd=normalizeDate(t.deadline); return nd>=nextMonthStart && nd<=nextMonthEnd; });
+
+  if (!nextWeekTasks.length && !nextMonthTasks.length) return '';
+
+  var months = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+  var nextMonthName = months[new Date(nextMonthStart).getMonth()];
+
+  function miniCard(t) {
+    var nd = normalizeDate(t.deadline);
+    var dp = nd ? nd.split('-') : null;
+    var dateStr = dp ? dp[2]+'/'+dp[1] : '';
+    var priColor = t.priority==='גבוהה' ? '#f87171' : t.priority==='נמוכה' ? '#34d399' : '#fbbf24';
+    return '<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--surface3);border-radius:7px;margin-bottom:4px">' +
+      '<div style="width:6px;height:6px;border-radius:50%;background:'+priColor+';flex-shrink:0"></div>' +
+      '<span style="font-size:.75rem;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(t.title)+'</span>' +
+      (dateStr ? '<span style="font-size:.68rem;color:var(--text3)">'+dateStr+'</span>' : '') +
+    '</div>';
+  }
+
+  var html = '<div class="summary-boxes">';
+
+  if (nextWeekTasks.length) {
+    html += '<div class="summary-box summary-week">' +
+      '<div class="summary-box-hdr">📅 שבוע הבא <span class="summary-count">'+nextWeekTasks.length+'</span></div>' +
+      nextWeekTasks.map(miniCard).join('') +
+    '</div>';
+  }
+  if (nextMonthTasks.length) {
+    html += '<div class="summary-box summary-month">' +
+      '<div class="summary-box-hdr">🗓️ '+nextMonthName+' <span class="summary-count">'+nextMonthTasks.length+'</span></div>' +
+      nextMonthTasks.map(miniCard).join('') +
+    '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
 // ===== RENDER =====
 function renderTasks() {
   var el = document.getElementById('tasksList');
   var filtered = getFiltered();
-  var open = sortTasks(filtered.filter(function(t) { return !t.done; }));
-  var done = sortTasks(filtered.filter(function(t) { return t.done; }));
   var today = new Date().toISOString().split('T')[0];
+  var todayWeekStart = getWeekStart(today);
+
+  var open = sortTasksByCreated(filtered.filter(function(t) { return !t.done; }));
+  var done = sortTasks(filtered.filter(function(t) { return t.done; }));
 
   if (!filtered.length) {
     el.innerHTML = '<div class="empty"><div class="empty-icon">🎯</div><div class="empty-text">אין משימות להצגה</div></div>';
@@ -1379,16 +1509,61 @@ function renderTasks() {
   }
 
   var html = '';
-  if (open.length) {
-    html += '<div class="section-hdr">פתוחות — ' + open.length + '</div>';
-    open.forEach(function(t) { html += taskHTML(t, today); });
+
+  // ── Summary boxes (next week / next month) ──
+  if (currentFilter === 'all' || currentFilter === 'open') {
+    html += renderSummaryBoxes(open, today);
   }
+
+  // ── Open tasks grouped by creation week ──
+  if (open.length) {
+    // Group by week of createdAt (oldest week first, within each week oldest task first)
+    var weeks = []; // [{weekStart, tasks[]}]
+    var weekMap = {};
+    open.forEach(function(t) {
+      var created = t.createdAt ? t.createdAt.substring(0,10) : today;
+      var ws = getWeekStart(created);
+      if (!weekMap[ws]) { weekMap[ws] = []; weeks.push(ws); }
+      weekMap[ws].push(t);
+    });
+    // Sort weeks: current week first, then going backwards
+    weeks.sort(function(a,b){ return b.localeCompare(a); });
+
+    weeks.forEach(function(ws) {
+      var label = formatWeekLabel(ws, todayWeekStart);
+      var wTasks = weekMap[ws];
+      // Within each week: oldest creation last (newest first → reverse for "last added at bottom")
+      wTasks.sort(function(a,b){
+        var ac = a.createdAt||'', bc = b.createdAt||'';
+        return ac.localeCompare(bc); // oldest first, newest last
+      });
+      var isThisWeek = ws === todayWeekStart;
+      html += '<div class="week-group">' +
+        '<div class="week-group-hdr' + (isThisWeek ? ' this-week' : '') + '">' +
+          '<span class="week-group-label">' + label + '</span>' +
+          '<span class="week-group-count">' + wTasks.length + ' משימות</span>' +
+        '</div>';
+      wTasks.forEach(function(t) { html += taskHTML(t, today); });
+      html += '</div>';
+    });
+  }
+
+  // ── Done tasks ──
   if (done.length && (currentFilter === 'all' || currentFilter === 'done')) {
     html += '<hr class="divider">';
-    html += '<div class="section-hdr" style="color:var(--green)">הושלמו — ' + done.length + '</div>';
+    html += '<div class="section-hdr" style="color:var(--green)">✅ הושלמו — ' + done.length + '</div>';
     done.forEach(function(t) { html += taskHTML(t, today); });
   }
+
   el.innerHTML = html;
+}
+
+// Sort by createdAt ascending (oldest first = appears at top of week group)
+function sortTasksByCreated(arr) {
+  return arr.slice().sort(function(a,b){
+    var ac = a.createdAt||'', bc = b.createdAt||'';
+    return ac.localeCompare(bc);
+  });
 }
 
 // index to color assignment (stable per task id)
