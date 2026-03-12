@@ -1167,11 +1167,13 @@ function checkRecurringReset() {
       // Monthly — reset if last done was in a previous month
       var thisMonth = today.substring(0, 7); // yyyy-MM
       var lastDoneMonth = t.lastDoneMonth || '';
-      if (lastDoneMonth !== thisMonth) {
+      if (lastDoneMonth && lastDoneMonth !== thisMonth) {
+        // Done in a previous month — reset for this month
         t.done = false;
         t.lastDoneMonth = '';
         changed = true;
       }
+      // If no lastDoneMonth — don't touch (was marked done this month already)
     }
   });
 
