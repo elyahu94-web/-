@@ -1421,11 +1421,8 @@ function openMonthModal(month) {
   var thisYear = new Date(today).getFullYear();
   var mStart = new Date(thisYear, month, 1).toISOString().split('T')[0];
   var mEnd   = new Date(thisYear, month+1, 0).toISOString().split('T')[0];
-  var allForSummary = tasks.filter(function(t){ return !t.done || (t.done && t.recurring); });
-  var mTasks = allForSummary.filter(function(t){
-    var nd = normalizeDate(t.deadline);
-    return (nd >= mStart && nd <= mEnd) || recurringAppearsInMonth(t, thisYear, month);
-  });
+  // Show all open tasks — no deadline filter needed
+  var mTasks = tasks.filter(function(t){ return !t.done; });
   document.getElementById('monthModalTitle').textContent = '🗓️ משימות ל' + MONTHS_HE[month] + ' ' + thisYear;
   var mNum = String(month + 1).padStart(2,'0');
   var body = document.getElementById('monthModalBody');
@@ -1470,11 +1467,7 @@ function refreshOpenModal() {
     var thisYear = new Date(today).getFullYear();
     var mStart = new Date(thisYear, month, 1).toISOString().split('T')[0];
     var mEnd   = new Date(thisYear, month+1, 0).toISOString().split('T')[0];
-    var allForSummary = tasks.filter(function(t){ return !t.done || (t.done && t.recurring); });
-    var mTasks = allForSummary.filter(function(t){
-      var nd = normalizeDate(t.deadline);
-      return (nd >= mStart && nd <= mEnd) || recurringAppearsInMonth(t, thisYear, month);
-    });
+    var mTasks = tasks.filter(function(t){ return !t.done; });
     var mNum = String(month + 1).padStart(2,'0');
     var displayTasks = mTasks.map(function(t) {
       if (t.recurring && t.recurType === 'monthly' && t.recurMonthDays && t.recurMonthDays.length) {
