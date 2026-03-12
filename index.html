@@ -2409,15 +2409,18 @@ function fetchCalendarEvents(year, month) {
 function renderCalendar() {
   var now = new Date();
   if (!calYear) { calYear = now.getFullYear(); calMonth = now.getMonth(); }
-  // Render immediately with cached events, then update with fresh ones
+  // Render immediately with cached events
   doRenderCalendar();
+  // Show loading while fetching calendar events
+  showLoading('מביא נתונים מהיומן...');
   fetch(APPS_SCRIPT_URL + '?action=getCalendarEvents&year=' + calYear + '&month=' + (calMonth+1))
     .then(function(r){ return r.json(); })
     .then(function(d){
       calendarEvents = (d.data || d) || [];
-      doRenderCalendar(); // re-render with events
+      doRenderCalendar();
+      hideLoading();
     })
-    .catch(function(){ });
+    .catch(function(){ hideLoading(); });
   return;
 }
 function doRenderCalendar() {
