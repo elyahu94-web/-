@@ -566,6 +566,7 @@ select.filter-sel {
   border-radius: 12px;
   padding: 12px;
   min-width: 0;
+  transition: none;
 }
 .summary-box.summary-week  { background: rgba(34,211,238,.22); border-color: rgba(34,211,238,.7); }
 .summary-box.summary-month { background: rgba(139,92,246,.15); border-color: rgba(139,92,246,.45); }
@@ -1413,7 +1414,7 @@ function closeConfirm() {
 // ===== MONTH MODAL =====
 var MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 function openMonthModal(month) {
-  event.stopPropagation();
+  if (typeof event !== 'undefined' && event && event.stopPropagation) event.stopPropagation();
   var today = new Date().toISOString().split('T')[0];
   var thisYear = new Date(today).getFullYear();
   var mStart = new Date(thisYear, month, 1).toISOString().split('T')[0];
@@ -1773,7 +1774,7 @@ function renderSummaryBoxes(allTasks, today, archiveTasks) {
       if (dp) dateStr = dp[2]+'/'+dp[1];
     }
     var priColor = t.priority==='גבוהה' ? '#f87171' : t.priority==='נמוכה' ? '#34d399' : '#fbbf24';
-    return '<div onclick="openEdit('+t.id+')" style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.25);border-radius:8px;margin-bottom:5px;cursor:pointer;transition:background .15s" onmouseover="this.style.background=\'rgba(34,211,238,.22)\'" onmouseout="this.style.background=\'rgba(34,211,238,.12)\'">' +
+    return '<div onclick="openEdit('+t.id+')" style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.25);border-radius:8px;margin-bottom:5px;cursor:pointer;transition:background .15s" >' +
       '<div style="width:7px;height:7px;border-radius:50%;background:'+priColor+';flex-shrink:0"></div>' +
       '<span style="font-size:.78rem;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e0f9ff" title="'+esc(t.title)+(t.desc?' — '+esc(t.desc):'')+'">' + esc(t.title) + '</span>' +
       '<span style="font-size:.65rem;color:#67e8f9;flex-shrink:0;white-space:nowrap">'+dateStr+'</span>' +
@@ -1799,7 +1800,7 @@ function renderSummaryBoxes(allTasks, today, archiveTasks) {
         if (dp) dateStr = dp[2]+'/'+dp[1];
       }
       var priColor = t.priority==='גבוהה' ? '#f87171' : t.priority==='נמוכה' ? '#34d399' : '#fbbf24';
-      return '<div onclick="openEdit('+t.id+')" style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.28);border-radius:8px;margin-bottom:5px;cursor:pointer;transition:background .15s" onmouseover="this.style.background=\'rgba(167,139,250,.22)\'" onmouseout="this.style.background=\'rgba(167,139,250,.12)\'">' +
+      return '<div onclick="openEdit('+t.id+')" style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.28);border-radius:8px;margin-bottom:5px;cursor:pointer;transition:background .15s" >' +
         '<div style="width:7px;height:7px;border-radius:50%;background:'+priColor+';flex-shrink:0"></div>' +
         '<span style="font-size:.78rem;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#ede9fe" title="'+esc(t.title)+(t.desc?' — '+esc(t.desc):'')+'">' + esc(t.title) + '</span>' +
         '<span style="font-size:.65rem;color:#c4b5fd;flex-shrink:0;white-space:nowrap">'+dateStr+'</span>' +
