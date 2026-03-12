@@ -2408,6 +2408,7 @@ function setView(v) {
   document.getElementById('listWrap').style.display = isCal ? 'none' : '';
   document.getElementById('btnList').classList.toggle('on', !isCal);
   document.getElementById('btnCal').classList.toggle('on', isCal);
+  document.body.style.overflow = '';
   if (isCal) renderCalendar();
 }
 
