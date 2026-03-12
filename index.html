@@ -1712,7 +1712,8 @@ function recurringLabel(t) {
 }
 
 // ===== SUMMARY BOXES =====
-function renderSummaryBoxes(allTasks, today) {
+function renderSummaryBoxes(allTasks, today, archiveTasks) {
+  archiveTasks = archiveTasks || [];
   var MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
   var nowD = new Date(today);
   var thisYear  = nowD.getFullYear();
@@ -1815,6 +1816,39 @@ function renderSummaryBoxes(allTasks, today) {
     '</div>';
   });
 
+  // Add archive boxes (older tasks) in same row
+  if (archiveTasks && archiveTasks.length) {
+    var archMONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+    var monthMap = {}, monthKeys = [];
+    archiveTasks.forEach(function(t) {
+      var created = (t.createdAt || today).substring(0,7);
+      if (!monthMap[created]) { monthMap[created] = []; monthKeys.push(created); }
+      monthMap[created].push(t);
+    });
+    monthKeys.sort(function(a,b){ return b.localeCompare(a); });
+    monthKeys.forEach(function(ym) {
+      var d = new Date(ym + '-01');
+      var label = archMONTHS[d.getMonth()] + ' ' + d.getFullYear();
+      var mTasks = monthMap[ym];
+      var archMonth = d.getMonth();
+      html += '<div class="summary-box" onclick="openMonthModal('+archMonth+')" style="cursor:pointer;border-color:rgba(88,101,129,.5);background:rgba(88,101,129,.08)">' +
+        '<div class="summary-box-hdr" style="color:var(--text2)">📂 '+label+' <span class="summary-count">'+mTasks.length+'</span></div>' +
+        mTasks.slice(0,3).map(function(t){
+          var nd = normalizeDate(t.deadline);
+          var dp = nd && nd > '1901-01-01' ? nd.split('-') : null;
+          var dateStr = dp ? dp[2]+'/'+dp[1] : (t.recurring ? '🔁' : '');
+          var priColor = t.priority==='גבוהה' ? '#f87171' : t.priority==='נמוכה' ? '#34d399' : '#fbbf24';
+          return '<div onclick="event.stopPropagation();openEdit('+t.id+')" style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--surface3);border-radius:7px;margin-bottom:4px;cursor:pointer">' +
+            '<div style="width:7px;height:7px;border-radius:50%;background:'+priColor+';flex-shrink:0"></div>' +
+            '<span style="font-size:.78rem;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text1)">'+esc(t.title)+'</span>' +
+            '<span style="font-size:.65rem;color:var(--text3);flex-shrink:0">'+dateStr+'</span>' +
+          '</div>';
+        }).join('') +
+        (mTasks.length > 3 ? '<div style="text-align:center;font-size:.75rem;color:var(--text3);padding:6px 0;font-weight:700">📋 עוד '+(mTasks.length-3)+' — לחץ לצפייה</div>' : '') +
+      '</div>';
+    });
+  }
+
   html += '</div>'; // summary-boxes
   html += '</div>'; // summary-section
   return html;
@@ -1870,13 +1904,10 @@ function renderTasks() {
 
   // ── Tatzpit Kadima (summary forward) ──
   if (currentFilter === 'all' || currentFilter === 'open') {
-    html += renderSummaryBoxes(allOpen, today); // allOpen already filtered to !done
+    html += renderSummaryBoxes(allOpen, today, archiveTasks);
   }
 
-  // ── Tatzpit Achora (archive — tasks older than last week) ──
-  if (archiveTasks.length && (currentFilter === 'all' || currentFilter === 'open')) {
-    html += renderArchiveBoxes(archiveTasks, today);
-  }
+
 
   // ── This week + Last week side by side ──
   function weekDateRange(weekStart) {
