@@ -2476,7 +2476,7 @@ function openDayModal(dateStr) {
     var html = dayTasks.map(function(t) {
       var pc = t.priority === 'גבוהה' ? 'var(--red)' : t.priority === 'נמוכה' ? 'var(--green)' : 'var(--yellow)';
       return '<div style="padding:12px;border:1px solid var(--border);border-right:3px solid '+pc+';border-radius:8px;margin-bottom:8px'+(t.done?';opacity:.45':'')+'">'+
-        '<div style="display:flex;justify-content:space-between"><span style="font-weight:700">'+ esc(t.title)+'</span>'+(t.time?'<span style="color:var(--cyan);font-size:.8rem">🕐 '+t.time+'</span>':'')+'</div>'+
+        '<div style="display:flex;justify-content:space-between"><span style="font-weight:700">'+ esc(t.title)+'</span>'+(cleanTimeStr(t.time)?'<span style="color:var(--cyan);font-size:.8rem">🕐 '+cleanTimeStr(t.time)+'</span>':'')+'</div>'+
         (t.desc?'<div style="font-size:.76rem;color:var(--text2);margin-top:4px">'+esc(t.desc)+'</div>':'')+
         '</div>';
     }).join('');
@@ -2484,7 +2484,7 @@ function openDayModal(dateStr) {
     var evHtml = dayEvents.map(function(e){
       return '<div style="background:rgba(130,80,220,.15);border-right:3px solid #b794f4;padding:8px 12px;border-radius:6px;margin-bottom:6px">' +
         '<div style="font-weight:600;color:#b794f4">📅 ' + esc(e.title) + '</div>' +
-        (e.time ? '<div style="font-size:.8rem;color:var(--text3)">' + e.time + '</div>' : '') +
+        (cleanTimeStr(e.time) ? '<div style="font-size:.8rem;color:var(--text3)">🕐 ' + cleanTimeStr(e.time) + '</div>' : '') +
         '</div>';
     }).join('');
     document.getElementById('dayModalContent').innerHTML = evHtml + html;
@@ -2494,6 +2494,24 @@ function openDayModal(dateStr) {
 
 function calPrev() { if (--calMonth < 0) { calMonth=11; calYear--; } renderCalendar(); }
 function calNext() { if (++calMonth > 11) { calMonth=0; calYear++; } renderCalendar(); }
+
+// ===== CLEAN TIME =====
+function cleanTimeStr(v) {
+  if (!v) return '';
+  var s = String(v).trim();
+  // Already HH:MM
+  if (/^\d{1,2}:\d{2}$/.test(s)) return s;
+  // ISO with 1899 garbage date — extract time part
+  var m = s.match(/T(\d{2}):(\d{2})/);
+  if (m) {
+    // Add Israel offset (+2/+3)
+    var h = parseInt(m[1]);
+    var min = m[2];
+    h = (h + 2) % 24; // UTC+2 approximation
+    return h + ':' + min;
+  }
+  return '';
+}
 
 // ===== LOADING OVERLAY =====
 function showLoading(msg) {
