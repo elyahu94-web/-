@@ -1554,6 +1554,9 @@ function deleteTask(id) {
   var t = tasks.find(function(x) { return x.id === id; });
   if (!t || !confirm('למחוק "' + t.title + '"?')) return;
   showLoading('מוחק...');
+  if (t.calEventId && isOnline) {
+    apiCall('deleteCalEvent', { calEventId: t.calEventId }, function(){}, function(){});
+  }
   tasks = tasks.filter(function(x) { return x.id !== id; });
   renderTasks(); updateStats(); refreshLists(); refreshOpenModal();
   persist(function() { hideLoading(); showToast('🗑️ נמחקה', var_red); });
@@ -2373,10 +2376,26 @@ function addToCal(id) {
   var t = tasks.find(function(x){ return x.id === id; });
   if (!t) return;
   if (!isOnline) { showToast('❌ נדרש חיבור לאינטרנט', var_red); return; }
+  if (t.calEventId) {
+    if (confirm('משימה זו כבר נוספה ביומן.\nהאם ברצונך לעבור ליום זה בלוח השנה?')) {
+      setView('cal');
+      if (t.deadline) {
+        var parts = t.deadline.split('-');
+        calYear = parseInt(parts[0]);
+        calMonth = parseInt(parts[1]) - 1;
+        renderCalendar();
+        setTimeout(function() { openDayModal(t.deadline); }, 800);
+      }
+    }
+    return;
+  }
   if (!t.deadline && !confirm('אין תאריך יעד. להוסיף להיום?')) return;
-  showToast('⏳ מוסיף ליומן...', var_green);
   showLoading('מוסיף ליומן...');
   apiCall('addToCalendar', { task: t }, function(res) {
+    if (res && res.calEventId) {
+      t.calEventId = res.calEventId;
+      persist(function(){});
+    }
     hideLoading();
     showToast('✅ נוסף ליומן!', var_green);
   }, function(e) { hideLoading(); showToast('שגיאה: ' + (e.message||''), var_red); });
