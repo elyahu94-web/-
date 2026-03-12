@@ -2496,16 +2496,27 @@ function openDayModal(dateStr) {
     var html = dayTasks.map(function(t) {
       var pc = t.priority === 'גבוהה' ? 'var(--red)' : t.priority === 'נמוכה' ? 'var(--green)' : 'var(--yellow)';
       return '<div style="padding:12px;border:1px solid var(--border);border-right:3px solid '+pc+';border-radius:8px;margin-bottom:8px'+(t.done?';opacity:.45':'')+'">'+
-        '<div style="display:flex;justify-content:space-between"><span style="font-weight:700">'+ esc(t.title)+'</span>'+(cleanTimeStr(t.time)?'<span style="color:var(--cyan);font-size:.8rem">🕐 '+cleanTimeStr(t.time)+'</span>':'')+'</div>'+
+        '<div style="display:flex;justify-content:space-between;align-items:center">'+
+          '<span style="font-weight:700;flex:1">'+ esc(t.title)+'</span>'+
+          (cleanTimeStr(t.time)?'<span style="color:var(--cyan);font-size:.8rem;margin-left:8px">🕐 '+cleanTimeStr(t.time)+'</span>':'')+
+        '</div>'+
         (t.desc?'<div style="font-size:.76rem;color:var(--text2);margin-top:4px">'+esc(t.desc)+'</div>':'')+
-        '</div>';
+        '<div style="display:flex;gap:8px;margin-top:10px">'+
+          '<button onclick="document.getElementById('dayModal').classList.remove('on');document.body.style.overflow='';openEdit('+t.id+')" style="flex:1;padding:6px;border-radius:7px;border:1px solid var(--border);background:var(--surface3);color:var(--text);font-size:.8rem;cursor:pointer">✏️ עריכה</button>'+
+          '<button onclick="document.getElementById('dayModal').classList.remove('on');document.body.style.overflow='';deleteTask('+t.id+')" style="flex:1;padding:6px;border-radius:7px;border:1px solid rgba(248,113,113,.3);background:rgba(248,113,113,.08);color:var(--red);font-size:.8rem;cursor:pointer">🗑️ מחק</button>'+
+          (t.calEventId ? '<a href="https://calendar.google.com/calendar/r'+(t.deadline?'/day/'+t.deadline.split(\'-\').join(\'/'):\'')+'" target="_blank" style="flex:1;padding:6px;border-radius:7px;border:1px solid rgba(167,139,250,.3);background:rgba(167,139,250,.08);color:#b794f4;font-size:.8rem;cursor:pointer;text-align:center;text-decoration:none;display:block">📅 ערוך ביומן</a>' : '')+
+        '</div>'+
+      '</div>';
     }).join('');
     // Add Google Calendar events
     var evHtml = dayEvents.map(function(e){
+      var editUrl = e.eventId
+        ? 'https://calendar.google.com/calendar/r/eventedit/' + encodeURIComponent(e.eventId)
+        : 'https://calendar.google.com/calendar/r';
       return '<div style="background:rgba(130,80,220,.15);border-right:3px solid #b794f4;padding:8px 12px;border-radius:6px;margin-bottom:6px">' +
         '<div style="font-weight:600;color:#b794f4">📅 ' + esc(e.title) + '</div>' +
         (cleanTimeStr(e.time) ? '<div style="font-size:.8rem;color:var(--text3)">🕐 ' + cleanTimeStr(e.time) + '</div>' : '') +
-        '</div>';
+      '</div>';
     }).join('');
     document.getElementById('dayModalContent').innerHTML = evHtml + html;
   }
