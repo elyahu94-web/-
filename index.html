@@ -1389,6 +1389,7 @@ function confirmReopen() {
 
 function closeReopen() {
   document.getElementById('reopenModal').classList.remove('on');
+  if (!_openModalType) document.body.style.overflow = '';
   _pendingId = null;
 }
 
@@ -1408,6 +1409,7 @@ function confirmDone() {
 
 function closeConfirm() {
   document.getElementById('confirmModal').classList.remove('on');
+  if (!_openModalType) document.body.style.overflow = '';
   _pendingId = null;
 }
 
@@ -1439,19 +1441,52 @@ function openMonthModal(month) {
   });
   body.innerHTML = displayTasks.length ? displayTasks.map(function(t){ return taskHTML(t, today); }).join('') : '<div style="color:var(--text3);text-align:center;padding:20px">אין משימות</div>';
   _openModalType = 'month:' + month;
+  document.body.style.overflow = 'hidden';
   document.getElementById('monthModal').classList.add('on');
 }
 function closeMonthModal() {
   document.getElementById('monthModal').classList.remove('on');
+  document.body.style.overflow = '';
   _openModalType = '';
 }
 
 // ===== REFRESH OPEN MODAL =====
 function refreshOpenModal() {
-  if (_openModalType === 'week') openWeekModal();
-  else if (_openModalType && _openModalType.indexOf('month:') === 0) {
-    var m = parseInt(_openModalType.split(':')[1]);
-    openMonthModal(m);
+  if (!_openModalType) return;
+  if (_openModalType === 'week') {
+    var today = new Date().toISOString().split('T')[0];
+    var nextWeekStart = addDays(getWeekStart(today), 7);
+    var nextWeekEnd   = addDays(nextWeekStart, 6);
+    var allForSummary = tasks.filter(function(t){ return !t.done || (t.done && t.recurring); });
+    var nwt = allForSummary.filter(function(t){
+      var nd = normalizeDate(t.deadline);
+      return (nd >= nextWeekStart && nd <= nextWeekEnd) || recurringAppearsInWeek(t);
+    });
+    var body = document.getElementById('weekModalBody');
+    if (body) body.innerHTML = nwt.length ? nwt.map(function(t){ return taskHTML(t, today); }).join('') : '<div style="color:var(--text3);text-align:center;padding:20px">אין משימות לשבוע הבא</div>';
+  } else if (_openModalType.indexOf('month:') === 0) {
+    var month = parseInt(_openModalType.split(':')[1]);
+    var today = new Date().toISOString().split('T')[0];
+    var thisYear = new Date(today).getFullYear();
+    var mStart = new Date(thisYear, month, 1).toISOString().split('T')[0];
+    var mEnd   = new Date(thisYear, month+1, 0).toISOString().split('T')[0];
+    var allForSummary = tasks.filter(function(t){ return !t.done || (t.done && t.recurring); });
+    var mTasks = allForSummary.filter(function(t){
+      var nd = normalizeDate(t.deadline);
+      return (nd >= mStart && nd <= mEnd) || recurringAppearsInMonth(t, thisYear, month);
+    });
+    var mNum = String(month + 1).padStart(2,'0');
+    var displayTasks = mTasks.map(function(t) {
+      if (t.recurring && t.recurType === 'monthly' && t.recurMonthDays && t.recurMonthDays.length) {
+        var day = String(t.recurMonthDays[0]).padStart(2,'0');
+        var clone = JSON.parse(JSON.stringify(t));
+        clone.deadline = thisYear + '-' + mNum + '-' + day;
+        return clone;
+      }
+      return t;
+    });
+    var body = document.getElementById('monthModalBody');
+    if (body) body.innerHTML = displayTasks.length ? displayTasks.map(function(t){ return taskHTML(t, today); }).join('') : '<div style="color:var(--text3);text-align:center;padding:20px">אין משימות</div>';
   }
 }
 
@@ -1471,10 +1506,12 @@ function openWeekModal() {
   if (!nwt.length) { body.innerHTML = '<div style="color:var(--text3);text-align:center;padding:20px">אין משימות לשבוע הבא</div>'; }
   else { body.innerHTML = nwt.map(function(t){ return taskHTML(t, today); }).join(''); }
   _openModalType = 'week';
+  document.body.style.overflow = 'hidden';
   document.getElementById('weekModal').classList.add('on');
 }
 function closeWeekModal() {
   document.getElementById('weekModal').classList.remove('on');
+  document.body.style.overflow = '';
   _openModalType = '';
 }
 
