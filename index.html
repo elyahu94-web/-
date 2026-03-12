@@ -2524,9 +2524,17 @@ function openDayModal(dateStr) {
       '</div>';
     }).join('');
     var evHtml = dayEvents.map(function(e){
+      var editUrl = e.eventId
+        ? 'https://calendar.google.com/calendar/r/eventedit/' + encodeURIComponent(e.eventId)
+        : 'https://calendar.google.com/calendar/r/day/' + dateStr.replace(/-/g,'/');
       return '<div style="background:rgba(130,80,220,.15);border-right:3px solid #b794f4;padding:8px 12px;border-radius:6px;margin-bottom:6px">' +
-        '<div style="font-weight:600;color:#b794f4">📅 ' + esc(e.title) + '</div>' +
-        (cleanTimeStr(e.time) ? '<div style="font-size:.8rem;color:var(--text3)">🕐 ' + cleanTimeStr(e.time) + '</div>' : '') +
+        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+          '<div>' +
+            '<div style="font-weight:600;color:#b794f4">📅 ' + esc(e.title) + '</div>' +
+            (cleanTimeStr(e.time) ? '<div style="font-size:.8rem;color:var(--text3)">🕐 ' + cleanTimeStr(e.time) + '</div>' : '') +
+          '</div>' +
+          '<a href="' + editUrl + '" target="_blank" style="padding:5px 10px;border-radius:7px;border:1px solid rgba(167,139,250,.4);background:rgba(167,139,250,.1);color:#b794f4;font-size:.78rem;text-decoration:none;white-space:nowrap;flex-shrink:0">✏️ ערוך ביומן</a>' +
+        '</div>' +
       '</div>';
     }).join('');
     document.getElementById('dayModalContent').innerHTML = evHtml + html;
