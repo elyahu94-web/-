@@ -1514,9 +1514,19 @@ function closeWeekModal() {
 function deleteTask(id) {
   var t = tasks.find(function(x) { return x.id === id; });
   if (!t || !confirm('למחוק "' + t.title + '"?')) return;
-  tasks = tasks.filter(function(x) { return x.id !== id; });
-  renderTasks(); updateStats(); refreshLists(); refreshOpenModal();
-  persist(function() { showToast('🗑️ נמחקה', var_red); });
+  // Immediate visual feedback
+  var card = document.querySelector('.task-card[data-id="' + id + '"]');
+  if (card) {
+    card.classList.add('processing');
+    card.style.transform = 'translateX(60px)';
+    card.style.opacity = '0';
+    card.style.transition = 'transform .25s ease, opacity .25s ease';
+  }
+  setTimeout(function() {
+    tasks = tasks.filter(function(x) { return x.id !== id; });
+    renderTasks(); updateStats(); refreshLists(); refreshOpenModal();
+    persist(function() { showToast('🗑️ נמחקה', var_red); });
+  }, 220);
 }
 
 // ===== PERSIST =====
