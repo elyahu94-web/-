@@ -1371,14 +1371,17 @@ function addTask() {
     return;
   }
 
+  showLoading('שומר משימה...');
   setSyncStatus('syncing');
   apiCall('saveTask', { task: task }, function() {
     task._pendingSync = false;
     localStorage.setItem('tasks_cache', JSON.stringify(tasks));
     setSyncStatus('');
+    hideLoading();
     showToast('✅ משימה נוספה!', var_green);
   }, function(e) {
     setSyncStatus('error');
+    hideLoading();
     queueSync('add', task);
     showToast('⚠️ נשמר לוקאלית', var_red);
   });
@@ -1419,7 +1422,8 @@ function confirmReopen() {
   if (!t) return;
   t.done = false;
   renderTasks(); updateStats(); refreshOpenModal();
-  persist(function() { showToast('📂 משימה נפתחה מחדש'); });
+  showLoading('פותח משימה...');
+  persist(function() { hideLoading(); showToast('📂 משימה נפתחה מחדש'); });
 }
 
 function closeReopen() {
@@ -1633,7 +1637,8 @@ function saveEdit() {
   }
   closeEdit();
   renderTasks(); updateStats(); refreshLists(); refreshOpenModal();
-  persist(function() { showToast('✅ נשמר'); });
+  showLoading('שומר שינויים...');
+  persist(function() { hideLoading(); showToast('✅ נשמר'); });
 }
 
 function closeEdit() {
