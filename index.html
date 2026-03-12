@@ -1855,6 +1855,14 @@ function renderSummaryBoxes(allTasks, today, archiveTasks) {
       monthMap[created].push(t);
     });
     monthKeys.sort(function(a,b){ return b.localeCompare(a); });
+
+    if (!monthKeys.length) {
+      html += '<div class="summary-box" style="border-color:rgba(88,101,129,.4);background:rgba(88,101,129,.06)">' +
+        '<div class="summary-box-hdr" style="color:var(--text2)">📂 ארכיון</div>' +
+        '<div style="font-size:.78rem;color:var(--text3);padding:10px 4px;text-align:center">אין משימות ישנות עדיין</div>' +
+      '</div>';
+    }
+
     monthKeys.forEach(function(ym) {
       var d = new Date(ym + '-01');
       var label = archMONTHS[d.getMonth()] + ' ' + d.getFullYear();
