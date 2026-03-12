@@ -1900,7 +1900,8 @@ function renderTasks() {
 
   // ── Tatzpit Kadima (summary forward) ──
   if (currentFilter === 'all' || currentFilter === 'open') {
-    html += renderSummaryBoxes(allOpen, today, archiveTasks);
+    var allTasksOpen = tasks.filter(function(t){ return !t.done || t.recurring; });
+    html += renderSummaryBoxes(allTasksOpen, today, archiveTasks);
   }
 
 
