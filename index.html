@@ -756,6 +756,35 @@ select.filter-sel {
 .confirm-sub { font-size: .82rem; color: var(--text2); text-align: center; margin-bottom: 4px; }
 
 /* TOAST */
+#loadingOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10,14,26,.75);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 800;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+}
+#loadingOverlay.show { display: flex; }
+.loading-spinner {
+  width: 40px; height: 40px;
+  border: 3px solid rgba(79,142,247,.2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text {
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: .5px;
+}
+
 #toast {
   position: fixed;
   bottom: 24px;
@@ -1024,6 +1053,10 @@ select.filter-sel {
   </div>
 </div>
 
+<div id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loadingText">מעדכן...</div>
+</div>
 <div id="toast"></div>
 
 <div class="overlay" id="monthModal" onclick="if(event.target===this)closeMonthModal()">
@@ -1399,6 +1432,7 @@ function confirmDone() {
   var t = tasks.find(function(x) { return x.id == _pendingId; });
   closeConfirm();
   if (!t) return;
+  showLoading('שומר...');
   t.done = true;
   if (t.recurring) {
     var today = new Date().toISOString().split('T')[0];
@@ -1406,7 +1440,7 @@ function confirmDone() {
     else t.lastDoneWeek = getWeekStart(today);
   }
   renderTasks(); updateStats(); refreshOpenModal();
-  persist(function() { showToast('🎉 משימה הושלמה!', var_green); });
+  persist(function() { hideLoading(); showToast('🎉 משימה הושלמה!', var_green); });
 }
 
 function closeConfirm() {
@@ -1514,19 +1548,10 @@ function closeWeekModal() {
 function deleteTask(id) {
   var t = tasks.find(function(x) { return x.id === id; });
   if (!t || !confirm('למחוק "' + t.title + '"?')) return;
-  // Immediate visual feedback
-  var card = document.querySelector('.task-card[data-id="' + id + '"]');
-  if (card) {
-    card.classList.add('processing');
-    card.style.transform = 'translateX(60px)';
-    card.style.opacity = '0';
-    card.style.transition = 'transform .25s ease, opacity .25s ease';
-  }
-  setTimeout(function() {
-    tasks = tasks.filter(function(x) { return x.id !== id; });
-    renderTasks(); updateStats(); refreshLists(); refreshOpenModal();
-    persist(function() { showToast('🗑️ נמחקה', var_red); });
-  }, 220);
+  showLoading('מוחק...');
+  tasks = tasks.filter(function(x) { return x.id !== id; });
+  renderTasks(); updateStats(); refreshLists(); refreshOpenModal();
+  persist(function() { hideLoading(); showToast('🗑️ נמחקה', var_red); });
 }
 
 // ===== PERSIST =====
@@ -2460,6 +2485,15 @@ function openDayModal(dateStr) {
 
 function calPrev() { if (--calMonth < 0) { calMonth=11; calYear--; } renderCalendar(); }
 function calNext() { if (++calMonth > 11) { calMonth=0; calYear++; } renderCalendar(); }
+
+// ===== LOADING OVERLAY =====
+function showLoading(msg) {
+  document.getElementById('loadingText').textContent = msg || 'מעדכן...';
+  document.getElementById('loadingOverlay').classList.add('show');
+}
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.remove('show');
+}
 
 // ===== TOAST =====
 function showToast(msg, color) {
