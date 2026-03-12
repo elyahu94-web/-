@@ -1744,15 +1744,11 @@ function renderSummaryBoxes(allTasks, today, archiveTasks) {
   var mEnd   = new Date(thisYear, thisMonth+1, 0).toISOString().split('T')[0];
   var seen = {};
   var mTasks = [];
+  // All open tasks — the monthly summary shows everything active this month
   allForSummary.forEach(function(t) {
     if (seen[t.id]) return;
-    var nd = normalizeDate(t.deadline);
-    var created = (t.createdAt || today).substring(0, 7); // yyyy-MM
-    var thisMonthStr = today.substring(0, 7);
-    // Include if: deadline in this month, OR created this month, OR recurring monthly
-    if (nd >= mStart && nd <= mEnd) { seen[t.id]=1; mTasks.push(t); return; }
-    if (created === thisMonthStr) { seen[t.id]=1; mTasks.push(t); return; }
-    if (recurringAppearsInMonth(t, thisYear, thisMonth)) { seen[t.id]=1; mTasks.push(t); }
+    seen[t.id] = 1;
+    mTasks.push(t);
   });
   if (mTasks.length) monthGroups.push({ name: MONTHS[thisMonth] + ' ' + thisYear, month: thisMonth, tasks: mTasks });
 
