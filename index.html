@@ -2483,21 +2483,36 @@ function doRenderCalendar() {
   }
 }
 
-function openDayModal(dateStr) {
-  var dayTasks = tasks.filter(function(t){ return t.deadline === dateStr; });
-  var dayEvents = calendarEvents.filter(function(e){ return e.date === dateStr; });
-  var dp = dateStr.split('-');
-  var dn = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
-  document.getElementById('dayModalTitle').textContent = 'יום ' + dn[new Date(dateStr).getDay()] + ' — ' + dp[2]+'/'+dp[1];
-  if (!dayTasks.length && !dayEvents.length) {
-    document.getElementById('dayModalContent').innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px">אין משימות ליום זה</div>';
-  } else {
-    dayTasks.sort(function(a,b){ return (a.time||'99').localeCompare(b.time||'99'); });
+function closeDayAndEdit(id) {
+  document.getElementById('dayModal').classList.remove('on');
+  document.body.style.overflow = '';
+  openEdit(id);
+}
+function closeDayAndDelete(id) {
+  document.getElementById('dayModal').classList.remove('on');
+  document.body.style.overflow = '';
+  deleteTask(id);
+}
     var html = dayTasks.map(function(t) {
       var pc = t.priority === 'גבוהה' ? 'var(--red)' : t.priority === 'נמוכה' ? 'var(--green)' : 'var(--yellow)';
+      var calBtn = '';
+      if (t.calEventId && t.deadline) {
+        var dp = t.deadline.split('-');
+        calBtn = '<a href="https://calendar.google.com/calendar/r/day/'+dp[0]+'/'+dp[1]+'/'+dp[2]+'" target="_blank" style="flex:1;padding:6px;border-radius:7px;border:1px solid rgba(167,139,250,.3);background:rgba(167,139,250,.08);color:#b794f4;font-size:.8rem;cursor:pointer;text-align:center;text-decoration:none;display:block">📅 ערוך ביומן</a>';
+      }
       return '<div style="padding:12px;border:1px solid var(--border);border-right:3px solid '+pc+';border-radius:8px;margin-bottom:8px'+(t.done?';opacity:.45':'')+'">'+
         '<div style="display:flex;justify-content:space-between;align-items:center">'+
           '<span style="font-weight:700;flex:1">'+ esc(t.title)+'</span>'+
+          (cleanTimeStr(t.time)?'<span style="color:var(--cyan);font-size:.8rem;margin-left:8px">🕐 '+cleanTimeStr(t.time)+'</span>':'')+
+        '</div>'+
+        (t.desc?'<div style="font-size:.76rem;color:var(--text2);margin-top:4px">'+esc(t.desc)+'</div>':'')+
+        '<div style="display:flex;gap:8px;margin-top:10px">'+
+          '<button onclick="closeDayAndEdit('+t.id+')" style="flex:1;padding:6px;border-radius:7px;border:1px solid var(--border);background:var(--surface3);color:var(--text);font-size:.8rem;cursor:pointer">✏️ עריכה</button>'+
+          '<button onclick="closeDayAndDelete('+t.id+')" style="flex:1;padding:6px;border-radius:7px;border:1px solid rgba(248,113,113,.3);background:rgba(248,113,113,.08);color:var(--red);font-size:.8rem;cursor:pointer">🗑️ מחק</button>'+
+          calBtn+
+        '</div>'+
+      '</div>';
+    }).join('');
           (cleanTimeStr(t.time)?'<span style="color:var(--cyan);font-size:.8rem;margin-left:8px">🕐 '+cleanTimeStr(t.time)+'</span>':'')+
         '</div>'+
         (t.desc?'<div style="font-size:.76rem;color:var(--text2);margin-top:4px">'+esc(t.desc)+'</div>':'')+
