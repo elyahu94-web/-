@@ -2493,12 +2493,22 @@ function closeDayAndDelete(id) {
   document.body.style.overflow = '';
   deleteTask(id);
 }
+function openDayModal(dateStr) {
+  var dayTasks = tasks.filter(function(t){ return t.deadline === dateStr; });
+  var dayEvents = calendarEvents.filter(function(e){ return e.date === dateStr; });
+  var dp = dateStr.split('-');
+  var dn = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+  document.getElementById('dayModalTitle').textContent = 'יום ' + dn[new Date(dateStr).getDay()] + ' — ' + dp[2]+'/'+dp[1];
+  if (!dayTasks.length && !dayEvents.length) {
+    document.getElementById('dayModalContent').innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px">אין משימות ליום זה</div>';
+  } else {
+    dayTasks.sort(function(a,b){ return (a.time||'99').localeCompare(b.time||'99'); });
     var html = dayTasks.map(function(t) {
       var pc = t.priority === 'גבוהה' ? 'var(--red)' : t.priority === 'נמוכה' ? 'var(--green)' : 'var(--yellow)';
       var calBtn = '';
       if (t.calEventId && t.deadline) {
-        var dp = t.deadline.split('-');
-        calBtn = '<a href="https://calendar.google.com/calendar/r/day/'+dp[0]+'/'+dp[1]+'/'+dp[2]+'" target="_blank" style="flex:1;padding:6px;border-radius:7px;border:1px solid rgba(167,139,250,.3);background:rgba(167,139,250,.08);color:#b794f4;font-size:.8rem;cursor:pointer;text-align:center;text-decoration:none;display:block">📅 ערוך ביומן</a>';
+        var dp2 = t.deadline.split('-');
+        calBtn = '<a href="https://calendar.google.com/calendar/r/day/'+dp2[0]+'/'+dp2[1]+'/'+dp2[2]+'" target="_blank" style="flex:1;padding:6px;border-radius:7px;border:1px solid rgba(167,139,250,.3);background:rgba(167,139,250,.08);color:#b794f4;font-size:.8rem;cursor:pointer;text-align:center;text-decoration:none;display:block">📅 ערוך ביומן</a>';
       }
       return '<div style="padding:12px;border:1px solid var(--border);border-right:3px solid '+pc+';border-radius:8px;margin-bottom:8px'+(t.done?';opacity:.45':'')+'">'+
         '<div style="display:flex;justify-content:space-between;align-items:center">'+
@@ -2513,11 +2523,7 @@ function closeDayAndDelete(id) {
         '</div>'+
       '</div>';
     }).join('');
-    // Add Google Calendar events
     var evHtml = dayEvents.map(function(e){
-      var editUrl = e.eventId
-        ? 'https://calendar.google.com/calendar/r/eventedit/' + encodeURIComponent(e.eventId)
-        : 'https://calendar.google.com/calendar/r';
       return '<div style="background:rgba(130,80,220,.15);border-right:3px solid #b794f4;padding:8px 12px;border-radius:6px;margin-bottom:6px">' +
         '<div style="font-weight:600;color:#b794f4">📅 ' + esc(e.title) + '</div>' +
         (cleanTimeStr(e.time) ? '<div style="font-size:.8rem;color:var(--text3)">🕐 ' + cleanTimeStr(e.time) + '</div>' : '') +
@@ -2526,7 +2532,9 @@ function closeDayAndDelete(id) {
     document.getElementById('dayModalContent').innerHTML = evHtml + html;
   }
   document.getElementById('dayModal').classList.add('on');
+  document.body.style.overflow = 'hidden';
 }
+
 
 function calPrev() { if (--calMonth < 0) { calMonth=11; calYear--; } renderCalendar(); }
 function calNext() { if (++calMonth > 11) { calMonth=0; calYear++; } renderCalendar(); }
