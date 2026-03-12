@@ -2206,9 +2206,9 @@ function taskHTML(t, today) {
       datesRow +
     '</div>' +
     '<div class="task-actions">' +
-      '<button class="btn-icon btn-cal" title="הוסף ליומן" onclick="addToCal(' + t.id + ')">📅</button>' +
-      '<button class="btn-icon" onclick="openEdit(' + t.id + ')">✏️</button>' +
-      '<button class="btn-icon btn-del" onclick="deleteTask(' + t.id + ')">🗑️</button>' +
+      '<button class="btn-icon btn-cal" title="הוסף ליומן" onclick="addToCal(' + t.id + ')">📅 הוספה ליומן</button>' +
+      '<button class="btn-icon" onclick="openEdit(' + t.id + ')">✏️ עריכה</button>' +
+      '<button class="btn-icon btn-del" onclick="deleteTask(' + t.id + ')">🗑️ מחק</button>' +
     '</div>' +
   '</div>';
 }
@@ -2375,10 +2375,11 @@ function addToCal(id) {
   if (!isOnline) { showToast('❌ נדרש חיבור לאינטרנט', var_red); return; }
   if (!t.deadline && !confirm('אין תאריך יעד. להוסיף להיום?')) return;
   showToast('⏳ מוסיף ליומן...', var_green);
+  showLoading('מוסיף ליומן...');
   apiCall('addToCalendar', { task: t }, function(res) {
-    if (res && res.link) window.open(res.link, '_blank');
+    hideLoading();
     showToast('✅ נוסף ליומן!', var_green);
-  }, function(e) { showToast('שגיאה: ' + (e.message||''), var_red); });
+  }, function(e) { hideLoading(); showToast('שגיאה: ' + (e.message||''), var_red); });
 }
 
 // ===== CALENDAR VIEW =====
