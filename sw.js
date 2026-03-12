@@ -1,4 +1,4 @@
-const CACHE = 'tasks-pwa-v22';
+const CACHE = 'tasks-pwa-v23';
 const ASSETS = [
   './index.html',
   'https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap'
