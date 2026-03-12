@@ -1438,6 +1438,7 @@ function confirmDone() {
   if (!t) return;
   showLoading('שומר...');
   t.done = true;
+  t.doneAt = new Date().toISOString();
   if (t.recurring) {
     var today = new Date().toISOString().split('T')[0];
     if (t.recurType === 'monthly') t.lastDoneMonth = today.substring(0, 7);
@@ -1941,7 +1942,7 @@ function renderTasks() {
   var thisMonthStart  = today.substring(0,7) + '-01';
 
   var allOpen = sortTasksByCreated(filtered.filter(function(t) { return !t.done; }));
-  var done    = sortTasks(filtered.filter(function(t) { return t.done; }));
+  var done    = filtered.filter(function(t) { return t.done; }).sort(function(a,b) { return (b.doneAt||b.createdAt||'').localeCompare(a.doneAt||a.createdAt||''); });
 
   if (!filtered.length) {
     el.innerHTML = '<div class="empty"><div class="empty-icon">🎯</div><div class="empty-text">אין משימות להצגה</div></div>';
